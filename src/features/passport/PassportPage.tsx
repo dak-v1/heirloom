@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
-import { ArrowRight, BookOpen, BookOpenCheck, Hand, Info, Stamp, X } from "lucide-react";
+import { ArrowRight, BookOpen, BookOpenCheck, Hand, Info, Stamp } from "lucide-react";
 import { SITES, findSite } from "../../content/sites";
 import { BADGES } from "../../content/badges";
 import { STAMPABLE_PAGE_IDS } from "../../content/passport";
@@ -11,7 +11,12 @@ import { StampArt, Tag } from "../../components/Media";
 import { progress, useProgress } from "../../state/progress";
 import { useReducedMotion } from "../../state/preferences";
 import { formatVisitDate } from "../completion/Completion";
-import { PassportBook } from "./PassportBook";
+import { PassportBook, useWideLayout } from "./PassportBook";
+import { BookTray } from "./BookTray";
+import { PlacementLayer } from "./PlacementLayer";
+import { PlacementControls } from "./PlacementControls";
+import { StampPress } from "./StampPress";
+import { usePlacement } from "./usePlacement";
 import "./passport.css";
 
 const Passport3D = lazy(() => import("./Passport3D"));
@@ -46,18 +51,56 @@ export function PassportPage() {
   const unplaced = p.earnedStamps.filter((s) => !isPlaced(s));
   const firstUnvisited = SITES.find((s) => !p.earnedStamps.some((e) => e.siteId === s.id));
 
-  // Arriving with a stamp to place: start on a stampable page, not the cover.
+  const placement = usePlacement({ reducedMotion: reduced });
+  const { draft, pressing } = placement;
+  const wide = useWideLayout();
+  const [zoomedOut, setZoomedOut] = useState(false);
+  const [visible, setVisible] = useState<string[]>([]);
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const zoomed = (!!draft && !zoomedOut) || !!pressing;
+  const onScreen = !!draft && visible.includes(draft.pageId);
+
+  // Each newly chosen stamp starts zoomed in on its page.
+  useEffect(() => setZoomedOut(false), [draft?.earnedStampId]);
+
+  // Escape cancels placing wherever focus is (unless a sheet is open and handles it).
+  const placing = !!draft;
   useEffect(() => {
-    if (toPlace && !STAMPABLE_PAGE_IDS.includes(progress.getVisitorProgress().passport.currentPageId ?? "")) {
-      progress.setCurrentPassportPage(STAMPABLE_PAGE_IDS[0]);
+    if (!placing) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !document.body.classList.contains("has-sheet")) placement.cancel();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [placing, placement.cancel]);
+
+  // Arriving with a stamp to place (?place= from the reward or the tray sheet): choose it.
+  useEffect(() => {
+    if (!toPlace) return;
+    placement.pick(toPlace.id);
+    const next = new URLSearchParams(params);
+    next.delete("place");
+    next.set("book", "1");
+    setParams(next, { replace: true, state: location.state });
+  }, [toPlace?.id]);
+
+  // Turning pages while placing carries the preview along to the stamp page now on screen.
+  const onVisiblePagesChange = (ids: string[]) => {
+    setVisible(ids);
+    const d = draftRef.current;
+    if (d && !ids.includes(d.pageId)) {
+      const target = ids.find((id) => STAMPABLE_PAGE_IDS.includes(id));
+      if (target) placement.moveToPage(target);
     }
-  }, [toPlace]);
+  };
 
   // Move focus into the book when it opens, so keyboard and screen-reader users land on it.
   // (Delayed so it wins over a closing sheet handing focus back to its opener.)
   useEffect(() => {
     if (!inBook) return;
-    const t = window.setTimeout(() => bookRef.current?.focus(), 60);
+    // If a stamp preview is already on a page, it has taken focus; leave it there.
+    const t = window.setTimeout(() => !draftRef.current && bookRef.current?.focus(), 60);
     return () => window.clearTimeout(t);
   }, [inBook]);
 
@@ -70,6 +113,7 @@ export function PassportPage() {
     setParams(next, { state: { overlay: true } });
   };
   const leaveBook = () => {
+    placement.cancel();
     if ((location.state as { overlay?: boolean } | null)?.overlay) navigate(-1);
     else setParams({}, { replace: true });
   };
@@ -78,12 +122,8 @@ export function PassportPage() {
     setOpen(true);
     openTimer.current = window.setTimeout(() => enterBook(), COVER_OPEN_MS);
   };
-  const cancelPlacing = () => {
-    const next = new URLSearchParams(params);
-    next.delete("place");
-    next.set("book", "1");
-    setParams(next, { replace: true, state: location.state });
-  };
+  const controls = <PlacementControls api={placement} onScreen={onScreen} zoomed={zoomed} onToggleZoom={() => setZoomedOut((z) => !z)} />;
+  const controlsBeside = wide && zoomed;
 
   return (
     <div className="page passport">
@@ -110,36 +150,34 @@ export function PassportPage() {
       </header>
 
       {inBook ? (
-        <section className="passport-book" aria-labelledby="book-h" ref={bookRef} tabIndex={-1}>
+        <section className={`passport-book${draft ? " is-placing" : ""}`} aria-labelledby="book-h" ref={bookRef} tabIndex={-1}>
           <div className="passport-book__head">
             <h2 id="book-h">Your passport</h2>
-            <Button variant="secondary" size="sm" icon={<BookOpen size={16} />} onClick={leaveBook}>
+            <Button variant="secondary" size="sm" icon={<BookOpen size={16} />} onClick={leaveBook} disabled={!!pressing}>
               Close passport
             </Button>
           </div>
-          {toPlace && (
-            <div className="placing card card--flat" role="status">
-              <StampArt src={findSite(toPlace.siteId)?.stamp.art ?? ""} alt="" tilt={-5} className="placing__stamp" />
-              <div className="placing__text">
-                <strong>Selected: {findSite(toPlace.siteId)?.name} stamp</strong>
-                <span className="muted">
-                  Flip to the page you'd like. <Tag tone="demo">In progress</Tag> Pressing the stamp onto the exact spot is being built next; your stamp stays safe in the tray.
-                </span>
-              </div>
-              <Button variant="ghost" size="sm" icon={<X size={16} />} onClick={cancelPlacing}>
-                Cancel
-              </Button>
-            </div>
-          )}
+          <BookTray earned={p.earnedStamps} placements={p.placements} selectedId={draft?.earnedStampId ?? null} onPick={placement.pick} />
           <PassportBook
             currentPageId={currentPageId}
             onPageChange={(id) => progress.setCurrentPassportPage(id)}
+            onVisiblePagesChange={onVisiblePagesChange}
             reducedMotion={reduced}
             identity={{ issuedAt: p.createdAt, guestId: p.guestId, stampsEarned: p.earnedStamps.length }}
+            swipeEnabled={!draft && !pressing}
+            zoomed={zoomed}
+            aside={controlsBeside ? controls : undefined}
+            renderPageOverlay={(page, { interactive }) => (
+              <PlacementLayer page={page} interactive={interactive} placements={p.placements} earned={p.earnedStamps} api={placement} />
+            )}
           />
-          <p className="muted passport-book__hint">
-            <Hand size={14} aria-hidden="true" /> Swipe, use the arrows, or press ← → to turn pages.
-          </p>
+          {!controlsBeside && controls}
+          {!draft && (
+            <p className="muted passport-book__hint">
+              <Hand size={14} aria-hidden="true" /> Swipe, use the arrows, or press ← → to turn pages. Tap a stamp on a page to move it.
+            </p>
+          )}
+          {pressing && !reduced && <StampPress pressing={pressing} onDone={placement.finishPress} />}
         </section>
       ) : (
       <section className="passport3d card" aria-labelledby="book-h">
@@ -269,19 +307,17 @@ export function PassportPage() {
             <p>
               Visited <strong>{formatVisitDate(detail.visitDate)}</strong>. {isPlaced(detail) ? "Placed in your passport." : "Waiting to be placed."}
             </p>
-            {!isPlaced(detail) && (
-              <Button
-                block
-                icon={<Stamp size={18} />}
-                onClick={() => {
-                  const id = detail.id;
-                  setDetail(null);
-                  enterBook(id);
-                }}
-              >
-                Place in passport
-              </Button>
-            )}
+            <Button
+              block
+              icon={<Stamp size={18} />}
+              onClick={() => {
+                const id = detail.id;
+                setDetail(null);
+                enterBook(id);
+              }}
+            >
+              {isPlaced(detail) ? "Move in passport" : "Place in passport"}
+            </Button>
             <ButtonLink to={`/site/${findSite(detail.siteId)?.slug}`} variant="ghost" block>
               Revisit {findSite(detail.siteId)?.name}
             </ButtonLink>

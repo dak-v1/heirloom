@@ -340,3 +340,421 @@
   font-size: var(--text-sm);
   color: var(--ink-muted);
 }
+
+/* ============ zoom (placing a stamp) ============ */
+/* Phones: a modest zoom; the page may bleed slightly into the side gutters. */
+.book--zoom {
+  --page-w: min(calc(100vw - 8px), calc(min(100%, max(240px, var(--page-h-max) * 0.704)) * 1.12));
+}
+@media (min-width: 760px) {
+  /* Wide screens: one page almost as tall as the viewport, controls beside it. */
+  .book--zoom {
+    --page-w: min(calc(100% - 300px), max(260px, (100dvh - var(--header-h) - var(--nav-h) - var(--safe-top) - var(--safe-bottom) - 110px) * 0.704));
+  }
+  .book--zoom .book__spread {
+    gap: var(--space-6);
+    align-items: flex-start;
+  }
+}
+.book__aside {
+  width: 276px;
+  flex: none;
+}
+
+/* ============ stamps on the page ============ */
+.placement-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.placement-layer.is-drafting {
+  pointer-events: auto;
+  touch-action: none;
+  cursor: crosshair;
+}
+.impression,
+.ghost {
+  position: absolute;
+  display: block;
+  aspect-ratio: 300 / 380;
+  padding: 0;
+  border: 0;
+  background: none;
+  container-type: inline-size;
+}
+/* Ink soaks into the paper rather than sitting on top of it. */
+.impression {
+  mix-blend-mode: multiply;
+}
+.impression--button {
+  pointer-events: auto;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.impression--button:focus-visible {
+  outline-offset: 2px;
+}
+.impression__ink {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.impression__ink img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.92;
+}
+.impression__date {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 5.4cqw;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  opacity: 0.9;
+}
+
+.ghost {
+  z-index: 9000;
+  opacity: 0.75;
+  cursor: grab;
+  border-radius: 4px;
+  outline: 2px dashed var(--terracotta);
+  outline-offset: 3px;
+  filter: drop-shadow(0 10px 12px rgb(45 42 35 / 0.3));
+}
+.ghost:active {
+  cursor: grabbing;
+}
+.ghost:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.ghost-tools {
+  position: absolute;
+  z-index: 9001;
+  display: grid;
+  gap: 4px;
+}
+.placement-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 5%;
+  z-index: 9002;
+  margin: 0;
+  padding: 6px 12px;
+  translate: -50% 0;
+  max-width: 92%;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  background: rgb(250 246 235 / 0.95);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-paper);
+  pointer-events: none;
+}
+.placement-hint--soft {
+  font-weight: 400;
+  color: var(--ink-muted);
+}
+
+/* ============ in-book stamp tray ============ */
+.book-tray {
+  margin-top: var(--space-3);
+}
+.book-tray__hint,
+.book-tray__empty {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+.book-tray__list {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.book-tray__item {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
+  width: 86px;
+  min-height: var(--touch);
+  padding: 6px 4px;
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius-m);
+  background: var(--paper-light);
+  color: var(--ink);
+  text-align: center;
+  cursor: grab;
+  /* Dragging a stamp must not scroll the page. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.book-tray__item:focus-visible {
+  outline-offset: -3px;
+}
+.book-tray__item .stamp-art {
+  width: 46px;
+}
+.book-tray__name {
+  max-width: 100%;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+.book-tray__item.is-selected {
+  background: var(--mustard-tint);
+  border-color: var(--mustard);
+}
+.book-tray__item.is-lifted {
+  opacity: 0.4;
+}
+.tray-drag-ghost {
+  position: fixed;
+  z-index: 70;
+  width: 96px;
+  translate: -50% -60%;
+  rotate: -6deg;
+  opacity: 0.85;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 12px rgb(45 42 35 / 0.35));
+}
+body.is-dragging-stamp {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ============ placement controls ============ */
+.placement-controls {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  background: var(--paper-light);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-paper);
+}
+.placement-controls__head {
+  display: grid;
+  gap: 2px;
+  font-size: var(--text-sm);
+}
+.placement-controls__head strong {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+}
+.placement-controls__grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: var(--space-4);
+}
+.placement-controls__group {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.placement-controls__group legend {
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.nudge-pad {
+  display: grid;
+  grid-template-columns: repeat(3, var(--touch));
+  grid-template-rows: repeat(3, var(--touch));
+  grid-template-areas: ". up ." "left . right" ". down .";
+  gap: 2px;
+}
+.nudge-pad__up {
+  grid-area: up;
+}
+.nudge-pad__left {
+  grid-area: left;
+}
+.nudge-pad__right {
+  grid-area: right;
+}
+.nudge-pad__down {
+  grid-area: down;
+}
+.placement-controls__row {
+  display: flex;
+  gap: 6px;
+}
+.placement-controls__secondary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+.placement-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: var(--space-2);
+}
+/* Phones: keep Cancel / Stamp here within thumb reach while the page fills the screen. */
+@media (max-width: 759px) {
+  .passport-book.is-placing {
+    padding-bottom: 76px;
+  }
+  .passport-book.is-placing .placement-actions {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--nav-h) + var(--safe-bottom));
+    z-index: 25;
+    padding: var(--space-2) max(var(--space-4), var(--safe-right)) var(--space-2) max(var(--space-4), var(--safe-left));
+    background: rgb(243 236 221 / 0.97);
+    border-top: 1px solid var(--paper-border);
+    box-shadow: 0 -8px 16px -12px rgb(45 42 35 / 0.45);
+  }
+}
+
+/* ============ stamp press ============ */
+/* Timings match PRESS_MS = 1000 and contact at 48% in StampPress.tsx. */
+.stamp-press {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  perspective: 900px;
+}
+.stamp-press__aim {
+  position: absolute;
+  transform-style: preserve-3d;
+}
+.stamp-press__drop {
+  transform-origin: 50% 79.5%;
+  animation: stamp-press-drop 1000ms linear both;
+}
+.stamp-press__tool {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 6px 6px rgb(45 42 35 / 0.25));
+}
+.stamp-press__shadow {
+  position: absolute;
+  width: 72%;
+  aspect-ratio: 3 / 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(45 42 35 / 0.5), transparent);
+  animation: stamp-press-shadow 1000ms linear both;
+}
+@keyframes stamp-press-drop {
+  0% {
+    transform: translateY(-120vh) rotateX(34deg);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.7, 0.4);
+  }
+  34% {
+    transform: translateY(-18%) rotateX(12deg);
+    animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  }
+  46% {
+    transform: translateY(0) rotateX(0deg) scaleY(1);
+  }
+  52% {
+    transform: translateY(1.5%) rotateX(0deg) scaleY(0.93);
+  }
+  62% {
+    transform: translateY(0) rotateX(0deg) scaleY(1);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+  }
+  100% {
+    transform: translateY(-120vh) rotateX(-14deg);
+  }
+}
+@keyframes stamp-press-shadow {
+  0% {
+    opacity: 0;
+    scale: 2;
+  }
+  46% {
+    opacity: 0.85;
+    scale: 1;
+  }
+  52% {
+    opacity: 1;
+    scale: 0.85;
+  }
+  70% {
+    opacity: 0.5;
+    scale: 1.3;
+  }
+  100% {
+    opacity: 0;
+    scale: 2.2;
+  }
+}
+
+/* The fresh impression appears at the moment of contact. */
+.impression.is-fresh {
+  animation: book-ink-reveal 1000ms linear both;
+}
+@keyframes book-ink-reveal {
+  0%,
+  47% {
+    opacity: 0;
+    scale: 1.05;
+    filter: blur(1.5px);
+  }
+  55% {
+    opacity: 1;
+    scale: 1;
+    filter: none;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+/* Ink ripple. The reward's `ink-ring` lives in site.css (not loaded on this page) and
+   ends half-visible; this one fades out completely. */
+.impression__ring {
+  position: absolute;
+  inset: -12%;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  animation: book-ink-ring 700ms ease-out 480ms both;
+}
+@keyframes book-ink-ring {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+  35% {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 0;
+    scale: 1.2;
+  }
+}
