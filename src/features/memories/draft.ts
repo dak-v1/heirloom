@@ -37,6 +37,15 @@ function save(siteId: string, d: MemoryDraftState) {
   }
 }
 
+/** Drop every unsent memory draft in this tab (demo reset). */
+export function clearAllMemoryDrafts() {
+  try {
+    for (const k of Object.keys(sessionStorage)) if (k.startsWith("heirloom:memory-draft:")) sessionStorage.removeItem(k);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * The memory being written for one site. Kept in state and in sessionStorage, so closing
  * the sheet, switching tabs or a failed submission never loses it. Cleared only after a

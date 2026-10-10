@@ -5,7 +5,7 @@ import { findSite } from "../../content/sites";
 import type { Site } from "../../content/types";
 import { Button, ButtonLink, IconButton } from "../../components/Button";
 import { Sheet } from "../../components/Sheet";
-import { Tag } from "../../components/Media";
+import { Tag, hideBrokenImage } from "../../components/Media";
 import { useToast } from "../../components/Toast";
 import { formatDistance } from "../../services/arrival";
 import { track } from "../../services/analytics";
@@ -83,6 +83,7 @@ function SiteExperience({ site }: { site: Site }) {
   const [wallKey, setWallKey] = useState(0);
   const [readTranscript, setReadTranscript] = useState(false);
   const [reward, setReward] = useState<EarnResult | null>(null);
+  const [heroBroken, setHeroBroken] = useState(false);
 
   const view = params.get("view");
   const playing = params.get("play") === "1";
@@ -144,6 +145,7 @@ function SiteExperience({ site }: { site: Site }) {
 
   const placeLater = () => {
     setReward(null);
+    if (placed) return;
     toast({ title: "Saved to your stamp tray", body: "Place it in your passport whenever you like.", image: site.stamp.art, tone: "success" });
   };
 
@@ -166,6 +168,10 @@ function SiteExperience({ site }: { site: Site }) {
           sizes="(max-width: 700px) 100vw, 700px"
           alt={today.image.alt}
           referrerPolicy="no-referrer"
+          onError={(e) => {
+            hideBrokenImage(e);
+            setHeroBroken(true);
+          }}
         />
         <div className="site-hero__bar">
           <IconButton label="Back to the map" variant="paper" onClick={() => navigate("/map")}>
@@ -176,7 +182,7 @@ function SiteExperience({ site }: { site: Site }) {
           </IconButton>
         </div>
         <p className="site-hero__credit">
-          {today.image.dateLabel} · {today.image.credit.creator}, {today.image.credit.license}
+          {heroBroken ? "Photo unavailable (you may be offline)" : `${today.image.dateLabel} · ${today.image.credit.creator}, ${today.image.credit.license}`}
         </p>
       </div>
 

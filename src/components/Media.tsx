@@ -80,6 +80,11 @@ export function FramedImage({ image, overlay, className, decorative, sizes = "(m
   );
 }
 
+/** onError for decorative remote photos: hide the broken image so the background shows instead. */
+export function hideBrokenImage(e: React.SyntheticEvent<HTMLImageElement>) {
+  e.currentTarget.dataset.broken = "true";
+}
+
 export function StampArt({ src, alt, tilt = 0, className, size }: { src: string; alt: string; tilt?: number; className?: string; size?: number }) {
   return (
     <img

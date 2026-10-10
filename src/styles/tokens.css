@@ -103,3 +103,10 @@
   --dur: 1ms;
   --dur-slow: 1ms;
 }
+
+/* "Full motion" in Preferences overrides a device-level reduced-motion setting. */
+:root[data-motion="full"] {
+  --dur-fast: 140ms;
+  --dur: 240ms;
+  --dur-slow: 420ms;
+}

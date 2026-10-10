@@ -5,6 +5,8 @@ import { SITES } from "../content/sites";
 import { STORY_LANGUAGES } from "../content/languages";
 import type { LangCode } from "../content/types";
 import { progress } from "../state/progress";
+import { forgetGuestIdentity } from "../services/memories";
+import { clearAllMemoryDrafts } from "../features/memories/draft";
 import { setPreferences, usePreferences, type MotionPref } from "../state/preferences";
 import { STATUS_LABEL, useGeo } from "../features/location/geo-context";
 import { Button, IconButton } from "./Button";
@@ -154,13 +156,16 @@ function MoreMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
         ) : (
           <div className="notice notice--warn" role="alert">
             <span>
-              This erases every stamp, badge and visit saved in this browser. It can't be undone.
+              This erases every stamp, placement, badge and visit saved in this browser, plus unsent memory drafts, and starts a new anonymous identity. Memories already
+              shared stay on the server for moderators. It can't be undone.
               <span className="menu-row" style={{ marginTop: 8 }}>
                 <Button
                   variant="ink"
                   size="sm"
                   onClick={() => {
                     progress.resetProgress();
+                    forgetGuestIdentity();
+                    clearAllMemoryDrafts();
                     setConfirmReset(false);
                     onClose();
                     toast({ title: "Progress reset", body: "This browser now has a fresh, empty passport." });

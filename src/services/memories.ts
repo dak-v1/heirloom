@@ -100,6 +100,18 @@ export function hasGuestToken() {
   }
 }
 
+/**
+ * Forget this browser's memory identity (demo reset). Its submissions stay on the server,
+ * subject to moderation, but are no longer listed under "Your submissions" here.
+ */
+export function forgetGuestIdentity() {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** This guest's own submissions with their moderation status. */
 export async function getMyMemories(): Promise<OwnMemory[]> {
   return (await call<{ memories: OwnMemory[] }>("/api/me/memories", {}, true)).memories;
