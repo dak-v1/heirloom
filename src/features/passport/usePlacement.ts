@@ -1,11 +1,11 @@
 import { useCallback, useRef, useState } from "react";
-import { PASSPORT_PAGES, STAMP_WIDTH, STAMPABLE_PAGE_IDS } from "../../content/passport";
+import { PASSPORT_PAGES, STAMPABLE_PAGE_IDS } from "../../content/passport";
 import { findSite } from "../../content/sites";
 import { useToast } from "../../components/Toast";
 import { track } from "../../services/analytics";
 import { PlacementError, type StampPlacement } from "../../services/progress";
 import { progress } from "../../state/progress";
-import { fit, undoPlacement, type Spot } from "./placement";
+import { fit, freeSpot, undoPlacement, type Spot } from "./placement";
 
 export interface Draft extends Spot {
   earnedStampId: string;
@@ -47,7 +47,8 @@ export function usePlacement({ reducedMotion }: { reducedMotion: boolean }) {
     const saved = state.placements.find((p) => p.earnedStampId === earnedStampId) ?? null;
     const current = state.passport.currentPageId ?? "";
     const pageId = at?.pageId ?? saved?.pageId ?? (STAMPABLE_PAGE_IDS.includes(current) ? current : STAMPABLE_PAGE_IDS[0]);
-    const base: Spot = saved ? { x: saved.x, y: saved.y, widthRatio: saved.widthRatio, rotationDeg: saved.rotationDeg } : { x: 0.5, y: 0.45, widthRatio: STAMP_WIDTH.default, rotationDeg: 0 };
+    const others = state.placements.filter((p) => p.pageId === pageId && p.earnedStampId !== earnedStampId);
+    const base: Spot = saved ? { x: saved.x, y: saved.y, widthRatio: saved.widthRatio, rotationDeg: saved.rotationDeg } : freeSpot(others);
     const spot = fit(at ? { ...base, x: at.x, y: at.y } : base);
     setDraft({ ...spot, earnedStampId, pageId, prev: saved ? { ...saved } : null, touched: !!at || !!saved });
     progress.setCurrentPassportPage(pageId);

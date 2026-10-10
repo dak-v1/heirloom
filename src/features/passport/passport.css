@@ -75,10 +75,6 @@
 .passport3d__canvas {
   position: absolute;
   inset: 0;
-  cursor: grab;
-}
-.passport3d__canvas:active {
-  cursor: grabbing;
 }
 .passport3d__canvas canvas {
   width: 100% !important;
@@ -187,35 +183,38 @@
   color: var(--ink-muted);
 }
 
-.badges__intro {
+.passport-badges__link {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: var(--ink);
+  text-decoration: none;
+}
+.passport-badges__link > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
   font-size: var(--text-sm);
-  margin-bottom: var(--space-4);
 }
-.badges {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: var(--space-4);
-}
-.badge {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  text-align: center;
-  font-size: var(--text-xs);
-}
-.badge img {
-  filter: grayscale(1) contrast(0.8) opacity(0.45);
-  transition: filter var(--dur-slow);
-}
-.badge.is-earned img {
-  filter: drop-shadow(0 4px 6px rgb(45 42 35 / 0.25));
-}
-.badge strong {
+.passport-badges__link strong {
   font-family: var(--font-display);
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
+}
+.passport-badges__pins {
+  display: flex;
+}
+.passport-badges__pins img {
+  width: 42px;
+  height: 42px;
+  margin-left: -12px;
+  filter: drop-shadow(0 3px 3px rgb(45 42 35 / 0.25));
+}
+.passport-badges__pins img:first-child {
+  margin-left: 0;
+}
+.passport-badges__pins img.is-locked {
+  filter: grayscale(1) opacity(0.45);
 }
 .storage-note {
   margin-top: var(--space-8);

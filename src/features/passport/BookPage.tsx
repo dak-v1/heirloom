@@ -2,6 +2,10 @@ import type { ReactNode } from "react";
 import { PAGE_ASPECT, type PassportPage } from "../../content/passport";
 
 export interface IdentityInfo {
+  /** The name chosen on the profile page. */
+  holder?: string;
+  /** The map icon chosen on the profile page, shown as the passport photo. */
+  avatar?: string;
   /** When this browser's passport was created (ISO). */
   issuedAt: string;
   /** Opaque guest ID; only a short, meaningless excerpt is shown. */
@@ -9,10 +13,13 @@ export interface IdentityInfo {
   stampsEarned: number;
 }
 
-function formatIssued(iso: string) {
+export function formatIssued(iso: string) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-SG", { day: "numeric", month: "long", year: "numeric" });
 }
+
+/** A short, meaningless excerpt of the guest ID, shown as the passport number. */
+export const passportNumber = (guestId: string) => `HL-${guestId.replace(/[^a-z0-9]/gi, "").slice(-6).toUpperCase()}`;
 
 /**
  * One logical passport page at the fixed 88 × 125 aspect. The page box is the
@@ -43,20 +50,23 @@ export function BookPage({ page, side, identity, overlay }: { page: PassportPage
 }
 
 function IdentityContent({ identity }: { identity: IdentityInfo }) {
-  const number = identity.guestId.replace(/[^a-z0-9]/gi, "").slice(-6).toUpperCase();
   return (
     <div className="identity">
-      <img className="identity__mark" src="/assets/brand/mark.svg" alt="" width={44} height={44} />
+      {identity.avatar ? (
+        <img className="identity__photo" src={identity.avatar} alt="" width={64} height={64} />
+      ) : (
+        <img className="identity__mark" src="/assets/brand/mark.svg" alt="" width={44} height={44} />
+      )}
       <p className="identity__kicker">Heirloom</p>
       <h3 className="identity__title">Heritage Passport</h3>
       <dl className="identity__fields">
         <div>
           <dt>Holder</dt>
-          <dd>Guest traveller</dd>
+          <dd>{identity.holder ?? "Guest explorer"}</dd>
         </div>
         <div>
           <dt>Passport no.</dt>
-          <dd>HL-{number}</dd>
+          <dd>{passportNumber(identity.guestId)}</dd>
         </div>
         <div>
           <dt>Issued</dt>

@@ -3,6 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { Site } from "../../content/types";
 import type { Fix } from "../../services/arrival";
+import { mapMeHtml } from "../profile/MapMe";
 
 interface Props {
   sites: Site[];
@@ -10,6 +11,8 @@ interface Props {
   visited: Set<string>;
   onSelect: (id: string) => void;
   fix: Fix | null;
+  /** The visitor's chosen map icon (profile). */
+  meArt: string;
   onTilesFailed: () => void;
 }
 
@@ -24,12 +27,17 @@ function icon(site: Site, n: number, selected: boolean, visited: boolean) {
   });
 }
 
+/** The visitor's position, shown with the map icon they chose on their profile. */
+function meIcon(art: string) {
+  return L.divIcon({ className: "map-me-wrap", html: mapMeHtml(art), iconSize: [46, 58], iconAnchor: [23, 57] });
+}
+
 /** Curated map. Tiles are decorative context; every action also exists in the list view. */
-export function LeafletMap({ sites, selectedId, visited, onSelect, fix, onTilesFailed }: Props) {
+export function LeafletMap({ sites, selectedId, visited, onSelect, fix, meArt, onTilesFailed }: Props) {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const markers = useRef(new Map<string, L.Marker>());
-  const me = useRef<{ dot: L.CircleMarker; ring: L.Circle } | null>(null);
+  const me = useRef<{ dot: L.Marker; ring: L.Circle } | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const failedRef = useRef(onTilesFailed);
@@ -101,13 +109,17 @@ export function LeafletMap({ sites, selectedId, visited, onSelect, fix, onTilesF
     if (!me.current) {
       me.current = {
         ring: L.circle(ll, { radius: fix.accuracy, color: "#2f5d8a", weight: 1, fillColor: "#2f5d8a", fillOpacity: 0.12, interactive: false }).addTo(m),
-        dot: L.circleMarker(ll, { radius: 7, color: "#fff", weight: 3, fillColor: "#2f5d8a", fillOpacity: 1, interactive: false }).addTo(m),
+        dot: L.marker(ll, { icon: meIcon(meArt), interactive: false, keyboard: false, zIndexOffset: 3000, alt: "You are here" }).addTo(m),
       };
     } else {
       me.current.ring.setLatLng(ll).setRadius(fix.accuracy);
       me.current.dot.setLatLng(ll);
     }
   }, [fix]);
+
+  useEffect(() => {
+    me.current?.dot.setIcon(meIcon(meArt));
+  }, [meArt]);
 
   return <div ref={el} className="leaflet-host" role="region" aria-label="Map of curated heritage sites. Use the list view for the same places as text." />;
 }

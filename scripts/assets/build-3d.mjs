@@ -8,7 +8,9 @@ import { fileURLToPath } from "node:url";
 import * as THREE from "three";
 import { Document, NodeIO } from "@gltf-transform/core";
 import { Resvg } from "@resvg/resvg-js";
-import { coverFrontSvg, coverBackSvg, spineSvg, endpaperSvg, identityPageSvg, pageEdgeSvg, LEATHER } from "./lib/passport-art.mjs";
+import { coverFrontSvg, coverBackSvg, spineSvg, endpaperSvg, identityPageSvg, stampPageSvg, endPageSvg, pageEdgeSvg, LEATHER } from "./lib/passport-art.mjs";
+import jpeg from "jpeg-js";
+import LAYOUT from "../../src/content/passport-layout.json" with { type: "json" };
 import { encodePng, leatherNormalMap, woodTexture } from "./lib/png.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -16,6 +18,12 @@ const outDir = path.join(root, "public", "assets", "3d");
 mkdirSync(outDir, { recursive: true });
 
 const renderPng = (svg, width) => Buffer.from(new Resvg(svg, { fitTo: { mode: "width", value: width } }).render().asPng());
+
+/** Page textures are photographic-ish paper, so JPEG keeps the GLB small. */
+function renderJpeg(svg, width, quality = 84) {
+  const img = new Resvg(svg, { fitTo: { mode: "width", value: width }, background: "#FAF6EB" }).render();
+  return Buffer.from(jpeg.encode({ data: Buffer.from(img.pixels), width: img.width, height: img.height }, quality).data);
+}
 
 /** Metallic-roughness map from a white-on-black mask: white → polished gold, black → leather. */
 function metalRoughFromMask(svg, width) {
@@ -168,7 +176,6 @@ function buildPassport() {
   );
   const spineMat = withGrain(doc.createMaterial("Spine").setBaseColorTexture(texture(doc, "spine", renderPng(spineSvg(), 128))).setRoughnessFactor(0.7).setMetallicFactor(0.15));
   const endpaper = doc.createMaterial("Endpaper").setBaseColorTexture(texture(doc, "endpaper", renderPng(endpaperSvg(), 704))).setRoughnessFactor(0.92).setMetallicFactor(0);
-  const identity = doc.createMaterial("IdentityPage").setBaseColorTexture(texture(doc, "identity-page", renderPng(identityPageSvg(), 880))).setRoughnessFactor(0.9).setMetallicFactor(0);
   const pageEdge = doc.createMaterial("PageEdges").setBaseColorTexture(texture(doc, "page-edges", renderPng(pageEdgeSvg(), 512))).setRoughnessFactor(0.95).setMetallicFactor(0);
   const paper = doc.createMaterial("Paper").setBaseColorFactor(hex("#F4EDDC")).setRoughnessFactor(0.95).setMetallicFactor(0);
   const ribbonMat = doc.createMaterial("Ribbon").setBaseColorFactor(hex("#BC9545")).setRoughnessFactor(0.6).setMetallicFactor(0.05).setDoubleSided(true);
@@ -186,15 +193,65 @@ function buildPassport() {
   back.addChild(backFace);
   rootNode.addChild(back);
 
-  // page block (sides show stacked leaves, top shows the identity page)
+  // ---- interior: a base block (the remaining sheets) under four turnable leaves ----
   const pw = W - 0.045, ph = H - 0.05;
-  const block = new THREE.BoxGeometry(pw, ph, Pd);
+  const LEAF_GAP = 0.005;
+  const leaves = LAYOUT.leaves;
+  const PdBase = Pd - LEAF_GAP * leaves.length;
+  const block = new THREE.BoxGeometry(pw, ph, PdBase);
   const uv = block.attributes.uv;
   for (let i = 8; i < 16; i++) uv.setXY(i, uv.getY(i), uv.getX(i)); // ±y faces: run leaf lines the same way as ±x
   for (let i = 16; i < 20; i++) uv.setXY(i, uv.getX(i), 1 - uv.getY(i)); // +z face: glTF v-down
-  const pages = doc.createNode("PageBlock").setTranslation([-W / 2 + 0.012 + pw / 2, 0, zOff + t + Pd / 2]);
-  pages.setMesh(addMesh(ctx, "PageBlock", block, [pageEdge, pageEdge, pageEdge, pageEdge, identity, paper]));
+  const pages = doc.createNode("PageBlock").setTranslation([-W / 2 + 0.012 + pw / 2, 0, zOff + t + PdBase / 2]);
+  pages.setMesh(addMesh(ctx, "PageBlock", block, [pageEdge, pageEdge, pageEdge, pageEdge, endpaper, paper]));
   rootNode.addChild(pages);
+
+  // One material per page face, named "Page:<pageId>" so the app can find it and draw stamps onto it.
+  const pageInfo = Object.fromEntries(LAYOUT.pages.map((pg, index) => [pg.id, { ...pg, index }]));
+  const sideOf = (id) => (leaves.some((l) => l.recto === id) ? "recto" : "verso");
+  const pageSvg = (id) => (id === "identity" ? identityPageSvg(pageInfo.identity.index) : id === "end" ? endPageSvg() : stampPageSvg(pageInfo[id], sideOf(id)));
+  const pageMaterial = (id) =>
+    doc.createMaterial(`Page:${id}`)
+      .setBaseColorTexture(doc.createTexture(`page-${id}`).setImage(renderJpeg(pageSvg(id), 720)).setMimeType("image/jpeg"))
+      .setRoughnessFactor(0.92)
+      .setMetallicFactor(0);
+
+  /** A flat sheet hinged at local x = 0, subdivided along x so the app can curl it while turning. */
+  const leafPlane = (verso, segs = 24, x0 = 0.012) => {
+    const pos = [], nrm = [], uvs = [], idx = [];
+    for (let c = 0; c <= segs; c++) {
+      const x = x0 + (pw * c) / segs;
+      const u = verso ? 1 - c / segs : c / segs;
+      for (const [y, v] of [[ph / 2, 0], [-ph / 2, 1]]) {
+        pos.push(x, y, 0);
+        nrm.push(0, 0, verso ? -1 : 1);
+        uvs.push(u, v);
+      }
+    }
+    for (let c = 0; c < segs; c++) {
+      const a = c * 2, b = a + 1, cc = a + 3, d = a + 2;
+      if (verso) idx.push(a, cc, b, a, d, cc);
+      else idx.push(a, b, cc, a, cc, d);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
+    g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    g.setIndex(idx);
+    return g;
+  };
+
+  const zb = zOff + t + PdBase;
+  const turnClips = [];
+  leaves.forEach((leaf, i) => {
+    // Leaf 1 sits on top, just under the closed front cover.
+    const z = zb + (leaves.length - i) * LEAF_GAP - LEAF_GAP * 0.9;
+    const node = doc.createNode(leaf.node).setTranslation([-W / 2, 0, z]).setExtras({ heirloom: { recto: leaf.recto, verso: leaf.verso } });
+    node.addChild(doc.createNode(`${leaf.node}Recto`).setMesh(addMesh(ctx, `${leaf.node}Recto`, leafPlane(false), [pageMaterial(leaf.recto)])));
+    node.addChild(doc.createNode(`${leaf.node}Verso`).setMesh(addMesh(ctx, `${leaf.node}Verso`, leafPlane(true), [pageMaterial(leaf.verso)])));
+    rootNode.addChild(node);
+    turnClips.push(node);
+  });
 
   // spine: half cylinder wrapping the left edge
   const spineGeo = new THREE.CylinderGeometry(T / 2, T / 2, H - 0.004, 24, 1, true, Math.PI, Math.PI);
@@ -219,24 +276,31 @@ function buildPassport() {
   ribbon.setMesh(addMesh(ctx, "Ribbon", rib, [ribbonMat]));
   rootNode.addChild(ribbon);
 
-  // "Open" animation: front cover swings to the left around the spine
-  const times = [0, 0.18, 0.4, 0.65, 0.9, 1.1];
-  const angles = [0, -6, -40, -105, -158, -172];
-  const q = [];
-  for (const a of angles) q.push(...new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(a)).toArray());
-  const sampler = doc.createAnimationSampler()
-    .setInput(doc.createAccessor().setType("SCALAR").setArray(new Float32Array(times)).setBuffer(buffer))
-    .setOutput(doc.createAccessor().setType("VEC4").setArray(new Float32Array(q)).setBuffer(buffer))
-    .setInterpolation("LINEAR");
-  const channel = doc.createAnimationChannel().setTargetNode(front).setTargetPath("rotation").setSampler(sampler);
-  doc.createAnimation("Open").addSampler(sampler).addChannel(channel);
+  const rotationClip = (name, node, times, degrees) => {
+    const q = [];
+    for (const a of degrees) q.push(...new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), THREE.MathUtils.degToRad(a)).toArray());
+    const sampler = doc.createAnimationSampler()
+      .setInput(doc.createAccessor().setType("SCALAR").setArray(new Float32Array(times)).setBuffer(buffer))
+      .setOutput(doc.createAccessor().setType("VEC4").setArray(new Float32Array(q)).setBuffer(buffer))
+      .setInterpolation("LINEAR");
+    const channel = doc.createAnimationChannel().setTargetNode(node).setTargetPath("rotation").setSampler(sampler);
+    doc.createAnimation(name).addSampler(sampler).addChannel(channel);
+  };
+  // "Open": front cover swings to the left around the spine
+  const open = LAYOUT.coverOpenDeg;
+  rotationClip("Open", front, [0, 0.18, 0.4, 0.65, 0.9, 1.1], [0, -6, -40, -105, -158, open]);
+  // "TurnLeafN": rigid page turns (the app adds a paper curl on top of these)
+  turnClips.forEach((node, i) => rotationClip(`TurnLeaf${i + 1}`, node, [0, 0.2, 0.45, 0.7], [0, -45, -120, open + 0.5]));
 
   rootNode.setExtras({
     heirloom: {
-      description: "Heirloom Heritage Passport. Tap-to-open: play the 'Open' clip forwards; close by playing it backwards.",
+      description: "Heirloom Heritage Passport with four turnable leaves (8 logical pages). Play 'Open' to open the cover and 'TurnLeafN' to turn a leaf; play backwards to undo.",
       dimensions: { width: W, height: H, thickness: T, units: "decimetres (88 × 125 mm passport at 10:1)" },
       hingeNode: "FrontCover",
-      firstPageNode: "PageBlock",
+      leaves: leaves.map((l) => ({ node: l.node, recto: l.recto, verso: l.verso })),
+      pageMaterials: "Page:<pageId> (identity, p1–p6, end); inside covers use Endpaper",
+      clips: ["Open", ...leaves.map((_, i) => `TurnLeaf${i + 1}`)],
+      layout: "src/content/passport-layout.json",
     },
   });
   return doc;

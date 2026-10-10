@@ -186,7 +186,12 @@ export interface BadgeDef {
   name: string;
   description: string;
   howToEarn: string;
+  /** Enamel pin artwork (public/assets/badges). */
   art: string;
+  /** What the pin depicts, for the close-up. */
+  motif: string;
+  /** A line of heritage background about the motif. */
+  about: string;
   /** Not yet earnable in this build (feature lands in a later stage). */
   comingSoon?: boolean;
 }

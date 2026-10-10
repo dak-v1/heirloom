@@ -50,7 +50,8 @@ Optional `.env` (see `.env.example`): `HEIRLOOM_ADMIN_TOKEN` enables moderation 
 | `/` | Home: start, find nearby, continue visit, trail cards, passport preview | |
 | `/map` | Leaflet map (OSM tiles, sepia) + accessible list, "I'm here", directions, demo arrival | `?view=list`, `?site=<id>` |
 | `/site/:slug` | Visit journey (6 steps) | overlays in the URL so Back closes them: `?view=past`, `?view=live`, `?play=1` |
-| `/passport` | 3D cover → flat 8-page book (prev/next, swipe, page turn), in-book tray, free placement + zoom + stamp press, undo/reposition, counts, tray, badges | `?book=1` (book open), `?place=<earnedStampId>` (place that stamp) |
+| `/passport` | One 3D book throughout: the cover opens, leaves turn (page-edge tap, swipe, arrows, ← →), tap a page to zoom; in-book tray (drag a stamp onto a 3D page), free placement on the page, 3D rubber-stamp press, undo/reposition, counts, tray, and a link to the badge board. "Flat pages" (or no WebGL) switches to the 2D book. The identity page shows the profile name and icon | `?book=1` (book open), `?place=<earnedStampId>` (place that stamp) |
+| `/profile` | Heritage Explorer Card (map icon, editable name, rank, counts); "Choose your map icon" sheet with a map preview; achievement board, a canvas pennant where earned badges pop in as enamel pins, can be dragged anywhere (or moved with arrow keys) and opened up close; "Still to earn" list | Name, icon and pin layout are browser-local (`heirloom:profile:v1`) |
 | `/about`, `/privacy`, `/terms` | Sources, image licences, permissions, community and moderation rules | |
 | `/admin` | Memory moderation (token in sessionStorage only) | Not linked from any menu |
 | `/dev/hotspots` | Dev-only hotspot calibration grid | Not in production builds |
@@ -134,10 +135,17 @@ Invoke-RestMethod -Method Post -Headers $h -ContentType application/json -Body '
 ## 6. Connection points (as built)
 
 - **Finish → earn**: `SitePage.finish()` calls `progress.earnStamp(site.id, site.stamp.id)` and shows `StampReward` (`src/features/completion/Completion.tsx`). Insert the optional memory step *before* this; do not gate earning on it.
-- **"Stamp my passport"** navigates to `/passport?place=<earnedStampId>`; `PassportPage` calls `usePlacement().pick()`, the book (`PassportBook`, `zoomed`) turns and zooms, `PlacementLayer` handles ghost/drag/keys, `confirm()` calls `saveStampPlacement` once, then `StampPress` animates. If the stamp is already placed, the reward offers "See it in my passport" (`/passport?book=1` on its page) instead.
+- **"Stamp my passport"** navigates to `/passport?place=<earnedStampId>`; `PassportPage` calls `usePlacement().pick()`. The 3D book (`PassportBook3D` → `three/PassportScene.ts`) opens, turns to the page and zooms onto it, and the scene reports taps and drags on the page as normalised spots (`onPlace`). `confirm()` calls `saveStampPlacement` once, then the scene plays the rubber-stamp press (`pressStamp`). In the flat fallback, `PassportBook` + `PlacementLayer` + `StampPress` do the same. If the stamp is already placed, the reward offers "See it in my passport" (`/passport?book=1` on its page) instead.
 - **"Place later"** already works: the stamp stays in `progress.getUnplacedStamps()` (the tray).
 - **Memory step** (done in Stage 2): `MemoryComposer` in the `sheet === "memory"` sheet, `MemoryWall` on the site page; `progress.recordMemorySubmitted()` awards `memory-keeper`. `finish()` is untouched.
 - **Analytics** (local only): `track("stamp_placed" | "memory_submitted", …)` in `src/services/analytics.ts`.
+
+### Profile and badge board (added after Stage 4, on request)
+
+- **Data:** `src/services/profile.ts` (`createProfileService`: `setName`, `setAvatar`, `pinBadges`, `movePin`, `arrange`, `markSeen`, `reset`), wired up in `src/state/profile.ts` (`useProfile()`). Saved data is validated on load. The menu's reset clears it along with progress.
+- **Board geometry:** `src/features/profile/board.ts` (pennant shape, clamping, the arrival scatter and Tidy up), unit-tested in `tests/profile.test.ts`.
+- **Arrival:** `BadgeBoard` pins badges that are earned but not yet on the board once the board is at least 30% on screen, then plays the pop (CSS keyframes plus `playPinPop()` if sound effects are on). Reduced motion skips the animation. The NEW tag stays until the badge is opened up close. The badge toast has a "See your board" action.
+- **Map marker:** `LeafletMap` draws the visitor's position with `mapMeHtml()` (the chosen icon) above the site pins. `MapMe` is the same marker in React (picker preview).
 
 ## 7. Assets ready for Stage 2
 
@@ -145,13 +153,13 @@ See [ASSETS.md](ASSETS.md) for specs.
 - Ink impressions for placed stamps: `public/assets/stamps/<site>-ink.svg` with a blank band for the visit date (`site.stamp.dateBand`, normalised). Print `formatVisitDate(stamp.visitDate)` there in CSS.
 - Rubber stamp tool: `public/assets/3d/rubber-stamp.glb` (3D) and `public/assets/decor/stamp-tool.svg` (2D, for a CSS-perspective animation as the spec prefers).
 - Stamp sound: `playStampThunk()` in `src/services/audio/sfx.ts` (check `getPreferences().soundEffects`).
-- 3D passport: `public/assets/3d/heirloom-passport.glb` with a hinged `FrontCover` node and an `Open` animation; viewer in `src/features/passport/Passport3D.tsx`. Page textures (endpaper, identity page) are generated in `scripts/assets/lib/passport-art.mjs` and can be exported as images for the 2D page UI.
+- 3D passport: `public/assets/3d/heirloom-passport.glb` with a hinged `FrontCover`, four turnable leaves and one `Page:<pageId>` material per page face (see ASSETS.md). Shared layout: `src/content/passport-layout.json`. Page art is generated in `scripts/assets/lib/passport-art.mjs`.
 - Paper texture tile: `public/assets/textures/paper-grain.png` (256 px, transparent). Decorative: `postmark*.svg`, `waves*.svg`, `orchid.svg`, `shophouses.svg`.
 
 ## 8. Stage 2 scope: done
 
 1. Memories: composer (note + drawing with palette, pen, undo, clear, blank validation, draft preservation), scrapbook wall of approved memories with labelled samples, `/admin` moderation plus the curl workflow above, report action. Code: `src/features/memories/`, `src/features/admin/`.
-2. Interactive passport: cover/identity/stamp pages, page turn (buttons, swipe, keys, reduced-motion variant, "Page n of 8"), trays, free placement within bounds, confirm/cancel, stamp-press animation, undo and repositioning, accessible controls, persistence. Code: `src/features/passport/` (`PassportBook`, `BookPage`, `usePlacement`, `placement.ts`, `PlacementLayer`, `PlacementControls`, `BookTray`, `StampImpression`, `StampPress`).
+2. Interactive passport: cover/identity/stamp pages, page turn (buttons, swipe, keys, reduced-motion variant, "Page n of 8"), trays, free placement within bounds, confirm/cancel, stamp-press animation, undo and repositioning, accessible controls, persistence. Code: `src/features/passport/` (`usePlacement`, `placement.ts`, `PlacementControls`, `BookTray`; 3D: `PassportBook3D`, `three/PassportScene.ts`, `three/pageArt.ts`, `three/curl.ts`; flat fallback: `PassportBook`, `BookPage`, `PlacementLayer`, `StampImpression`, `StampPress`).
 3. Integration, About/Privacy/Terms wording, QA and docs. **Still open:** the acceptance checklist on real phones (see FINAL_REPORT §7).
 
 ## 9. Known issues and limitations (most severe first)

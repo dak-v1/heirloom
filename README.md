@@ -110,10 +110,10 @@ src/
   content/        curated data: sites, eras, hotspots, stories, games, stamps, badges, sources
   services/       storage, progress (earnStamp…), arrival detection, audio, memories API client
   state/          app-wide stores (progress, preferences)
-  features/       home, map, location, site (Past View, Live preview), audio, game, completion, passport, info
+  features/       home, map, location, site (Past View, Live preview), audio, game, completion, passport, profile, info
   components/     shell, buttons, sheets, toasts, framed images
 server/           Express + SQLite API: guest identity, memories with enforced moderation
-scripts/assets/   generators for stamps, badges, brand, decor and the 3D passport (GLB)
+scripts/assets/   generators for stamps, badge pins, avatars, brand, decor and the 3D passport (GLB)
 public/assets/    generated artwork (committed)
 tests/            Vitest unit + API tests
 docs/             handoff, sources register, asset specs, acceptance results

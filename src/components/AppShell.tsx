@@ -1,10 +1,11 @@
 import { useState, type ReactNode } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { BookOpen, Home, Map as MapIcon, Menu, MapPinned, RotateCcw } from "lucide-react";
+import { BookOpen, Home, Map as MapIcon, Menu, MapPinned, RotateCcw, UserRound } from "lucide-react";
 import { SITES } from "../content/sites";
 import { STORY_LANGUAGES } from "../content/languages";
 import type { LangCode } from "../content/types";
 import { progress } from "../state/progress";
+import { profile } from "../state/profile";
 import { forgetGuestIdentity } from "../services/memories";
 import { clearAllMemoryDrafts } from "../features/memories/draft";
 import { setPreferences, usePreferences, type MotionPref } from "../state/preferences";
@@ -47,6 +48,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <NavLink to="/passport" className="bottomnav__item">
             <BookOpen size={22} aria-hidden="true" />
             <span>Passport</span>
+          </NavLink>
+          <NavLink to="/profile" className="bottomnav__item">
+            <UserRound size={22} aria-hidden="true" />
+            <span>Profile</span>
           </NavLink>
         </nav>
       </div>
@@ -164,6 +169,7 @@ function MoreMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
                   size="sm"
                   onClick={() => {
                     progress.resetProgress();
+                    profile.reset();
                     forgetGuestIdentity();
                     clearAllMemoryDrafts();
                     setConfirmReset(false);

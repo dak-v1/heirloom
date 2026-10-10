@@ -37,7 +37,7 @@ main {
   bottom: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   height: calc(var(--nav-h) + var(--safe-bottom));
   padding: 0 max(var(--space-2), var(--safe-left)) var(--safe-bottom) max(var(--space-2), var(--safe-right));
   background: var(--paper-light);

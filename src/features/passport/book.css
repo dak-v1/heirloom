@@ -209,6 +209,14 @@
   width: 15%;
   height: auto;
 }
+.identity__photo {
+  width: 24%;
+  height: auto;
+  padding: 3px;
+  background: var(--paper);
+  border: 1.5px dashed var(--ink-muted);
+  border-radius: 3px;
+}
 .identity__kicker {
   margin: 0;
   font-family: var(--font-display);
@@ -620,10 +628,10 @@ body.is-dragging-stamp {
 }
 /* Phones: keep Cancel / Stamp here within thumb reach while the page fills the screen. */
 @media (max-width: 759px) {
-  .passport-book.is-placing {
+  :is(.passport-book, .passport3d).is-placing {
     padding-bottom: 76px;
   }
-  .passport-book.is-placing .placement-actions {
+  :is(.passport-book, .passport3d).is-placing .placement-actions {
     position: fixed;
     left: 0;
     right: 0;

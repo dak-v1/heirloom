@@ -8,10 +8,11 @@ Checked against `docs/Singapore_Reimagined_Final_Build_Prompt.md` §12 on **10 O
 
 | Key | Meaning |
 | --- | --- |
-| **U** | Unit/API tests: `npm test`, 50 passing |
+| **U** | Unit/API tests: `npm test`, 64 passing (adds leaf-curl, 3D-layout, free-spot, profile and badge-board tests) |
 | **A** | API and route smoke test against the production build (`npm run build` then `node server/index.mjs`), run in Stage 4 |
 | **S1** | Browser test by Perynn at the Stage 1 handoff (built-in Chromium, 375 × 812, plus 320 and desktop) |
 | **S2** | Browser test by the Stage 2 teammate after each Stage 2 step (desktop Chromium with device emulation and touch emulation at 320/375/430 and a wide window) |
+| **S3** | Browser test by Perynn after the 3D passport rework (built-in Chromium at 390 × 844 and 1280 × 900, mouse input, full and reduced motion) |
 | **C** | Code review only. It supports a result but is never the sole basis for a Pass |
 
 Nothing was tested on a real phone, with real GPS, a real camera or a screen reader. Every item that depends on one of those is marked **Not tested**.
@@ -23,7 +24,7 @@ The four Stage 4 fixes (image fallbacks, full reset, the reward button for alrea
 | Item | Status | Evidence |
 | --- | --- | --- |
 | Home immediately offers a working exploration action | Pass | S1: "Start exploring" → /map; "Find places near me" |
-| Primary navigation is Home, Map, Passport; no Scan or Games destination | Pass | `AppShell.tsx` NavLinks are `/`, `/map` and `/passport`; `/admin` is reachable only by URL (C, S1) |
+| Primary navigation is Home, Map, Passport; no Scan or Games destination | Pass | `AppShell.tsx` NavLinks are `/`, `/map`, `/passport` and `/profile` (Profile was added on request after Stage 4); still no Scan or Games destination; `/admin` is reachable only by URL (C, S1, S3) |
 | No QR scanner, QR asset, QR route or QR-dependent copy | Pass | Stage 4 grep of src, server and public for qr, scanner, scan routes, game hub and leaderboard: 0 matches |
 | Location is requested only through an explicit action | Pass | S1; C: `start()` is called only from buttons |
 | A qualifying foreground location produces the correct arrival sheet | Partial | U: radius, accuracy and debounce logic. **Real GPS on a device at the sites: Not tested** |
@@ -67,6 +68,17 @@ The four Stage 4 fixes (image fallbacks, full reset, the reward button for alrea
 | Sample memories are clearly labelled | Pass | A: 2 per site, `isSample`, "Sample visitor", text starting "Sample note:"; S2 ("Sample" tag) |
 | Report action | Pass | U (one report per guest per memory); S2 |
 
+## Profile and badge board (added on request after Stage 4)
+
+| Item | Status | Evidence |
+| --- | --- | --- |
+| Name can be set, is cleaned and persists; empty falls back to "Guest explorer" | Pass | U; S3 (edit, Enter saves, focus returns to the pencil) |
+| Map icon picker with a map preview; the choice shows on the real map and as the passport photo | Pass | S3 (picker; faked GPS fix on `/map` shows the icon above the site pin; 3D identity page shows it) |
+| Badges moved from the passport page to the profile board | Pass | S3; the passport page links to the board |
+| New badges pop onto the board when it comes into view, with a NEW tag until opened | Pass | S3 (three badges popped in with sparkles); U (pinned once, NEW cleared by `markSeen`) |
+| Pins can be dragged anywhere on the pennant and stay on it; arrow keys move a focused pin | Pass (emulated) | U (clamping, including the pointed tail); S3 with the mouse. **Touch drag on a real phone: Not tested** |
+| Tapping a pin opens a close-up with what it shows and how it's earned; locked badges too | Pass | S3 |
+
 ## Passport and stamping
 
 | Item | Status | Evidence |
@@ -75,14 +87,14 @@ The four Stage 4 fixes (image fallbacks, full reset, the reward button for alrea
 | Transcript readers and visitors who mute or skip games can complete the visit | Pass | S1 (journey B) |
 | Refreshing or repeating completion never issues duplicate stamps | Pass | U, S1 |
 | "Place later" keeps the earned stamp in the tray | Pass | S1, S2; C: the in-book tray and the passport-page tray both derive from `placements` |
-| Passport cover and interior pages render inside the actual viewport | Pass | S2 at 320, 375 and wide |
-| Previous/next and swipe turn to real pages with stable IDs | Pass | S2; C: `PASSPORT_PAGES` IDs are `cover`, `identity`, `p1`–`p6` |
-| Earned stamps can be placed freely on any stampable page, with no fixed slots | Pass | S2 |
+| Passport cover and interior pages render inside the actual viewport | Pass | S2 at 320, 375 and wide (flat book); S3 at 390 and 1280 (3D spread and zoomed page, which fits above the phone action bar) |
+| Previous/next and swipe turn to real pages with stable IDs | Pass | S2; S3 (3D: page-edge taps, arrows, ← →; turning back from the first spread closes the book); U (`tests/curl.test.ts`: every page sits on exactly one leaf face); C: `PASSPORT_PAGES` IDs are `cover`, `identity`, `p1`–`p6`. **3D swipe on a real phone: Not tested** |
+| Earned stamps can be placed freely on any stampable page, with no fixed slots | Pass | S2; S3 (dragged from the tray onto a 3D page, dragged on the page, carried to the next page by an edge tap) |
 | Tap and drag, rotation, confirm, cancel, undo and later repositioning work | Pass | U (`tests/placement.test.ts`: undo of a first placement, undo of a reposition restoring page, spot, size, rotation and layer, delete then undo); S2 |
 | The whole rotated stamp stays inside the paper bounds | Pass | U (clamp at 45° in a corner); S2 |
 | Placement gestures don't accidentally turn pages or scroll the surface | Pass (emulated) | S2 with touch emulation. **Real phone: Not tested** |
-| The dimensional stamp animation ends at the chosen position and leaves the correct impression | Pass | S2 |
-| Reduced-motion mode is usable | Pass | S2 (instant zoom, no tool, the impression appears) |
+| The dimensional stamp animation ends at the chosen position and leaves the correct impression | Pass | S2 (flat); S3 (the 3D rubber stamp lands on the spot and the impression appears on contact) |
+| Reduced-motion mode is usable | Pass | S2 (instant zoom, no tool, the impression appears); S3 (3D: instant open, turns and zoom, no tool) |
 | Repeated confirmation doesn't create duplicates | Pass | U (repeated saves leave one placement); C (single-flight guard); S2 |
 | Placements survive page turns, reloads, resizing and phone/desktop layout changes | Pass | S2; C (normalised coordinates on a fixed page ratio) |
 | Keyboard and non-drag placement controls provide an accessible alternative | Pass | S2 (keyboard only). **Screen reader: Not tested** |

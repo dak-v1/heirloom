@@ -1,5 +1,5 @@
 import { Component, lazy, Suspense, useEffect, type ReactNode } from "react";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router";
+import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router";
 import { AppShell } from "./components/AppShell";
 import { ToastProvider, useToast } from "./components/Toast";
 import { BADGE_BY_ID } from "./content/badges";
@@ -15,6 +15,7 @@ import { HomePage } from "./features/home/HomePage";
 const MapPage = lazy(() => import("./features/map/MapPage").then((m) => ({ default: m.MapPage })));
 const SitePage = lazy(() => import("./features/site/SitePage").then((m) => ({ default: m.SitePage })));
 const PassportPage = lazy(() => import("./features/passport/PassportPage").then((m) => ({ default: m.PassportPage })));
+const ProfilePage = lazy(() => import("./features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const info = () => import("./features/info/InfoPages");
 const AboutPage = lazy(() => info().then((m) => ({ default: m.AboutPage })));
 const PrivacyPage = lazy(() => info().then((m) => ({ default: m.PrivacyPage })));
@@ -38,15 +39,24 @@ const HotspotDebug = import.meta.env.DEV ? lazy(() => import("./features/dev/Hot
 /** Announce newly earned badges wherever they happen. */
 function BadgeToasts() {
   const toast = useToast();
+  const navigate = useNavigate();
   useEffect(
     () =>
       progress.onBadges((ids) => {
         for (const id of ids) {
           const b = BADGE_BY_ID.get(id);
-          if (b) toast({ title: `Badge earned: ${b.name}`, body: b.description, image: b.art, tone: "success", duration: 6000 });
+          if (b)
+            toast({
+              title: `Badge earned: ${b.name}`,
+              body: b.description,
+              image: b.art,
+              tone: "success",
+              duration: 7000,
+              action: { label: "See your board", onClick: () => navigate("/profile") },
+            });
         }
       }),
-    [toast],
+    [toast, navigate],
   );
   return null;
 }
@@ -99,6 +109,7 @@ function Root() {
                 <Route path="/map" element={<MapPage />} />
                 <Route path="/site/:slug" element={<SitePage />} />
                 <Route path="/passport" element={<PassportPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/terms" element={<TermsPage />} />

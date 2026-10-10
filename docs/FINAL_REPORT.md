@@ -15,7 +15,8 @@ A mobile-first, no-install web app (React 19 + Vite; Express 5 + SQLite API) for
 | `/` | Home: Start exploring, Find places near me, Continue your visit, trail cards, passport preview |
 | `/map` | Leaflet/OSM map plus an accessible list, "I'm here", directions and a labelled demo arrival (`?view=list`, `?site=<id>`) |
 | `/site/:slug` | The visit, as six steps: see the past, listen or read, explore details, play (optional), leave a memory (optional), finish. Then the stamp reward and next-site card. Overlays live in the URL so Back closes them: `?view=past` (Past View), `?view=live` (camera overlay preview), `?play=1` (Guess the Year). Sheets cover modes, transcript, sources, all details, hotspot detail and the memory composer. The memory wall is on the page |
-| `/passport` | A 3D leather cover (three.js) that opens into a flat, flippable 8-page book (`?book=1`). It has an in-book stamp tray, free placement with zoom, the stamp-press animation, undo and reposition, counts, a stamp tray and badges. `?place=<earnedStampId>` opens straight into placing that stamp |
+| `/passport` | A 3D leather passport (three.js) used for the whole flow (`?book=1`). The cover opens and 4 leaves (8 pages) turn with a paper curl when you tap a page edge, swipe, use the arrows or press ← →. The camera zooms onto one page for stamping: drag a stamp from the in-book tray onto the 3D page, then drag, rotate and resize it there; a 3D rubber stamp presses the impression in. Undo and reposition, counts, a stamp tray and a link to the badge board. "Flat pages" (or no WebGL) shows the 2D book instead. `?place=<earnedStampId>` opens straight into placing that stamp |
+| `/profile` | The visitor's profile. A Heritage Explorer Card shows their chosen map icon, an editable name, a rank and their counts. Tapping the icon opens "Choose your map icon" (otter, kopi, Merlion, orchid, trishaw, durian) with a preview on an illustrated map; the icon then marks "you are here" on the real map and appears as the passport photo. The achievement board is a canvas pennant: earned badges pop onto it as Singapore-themed enamel pins, can be dragged anywhere, and open up close with what they show and how they were earned. Below it is a "Still to earn" list |
 | `/about`, `/privacy`, `/terms` | Sources and methodology, permissions and data, community and moderation rules |
 | `/admin` | Protected moderation queue for memories. Lazy-loaded and linked from no menu |
 | `/dev/hotspots` | Hotspot calibration. Development builds only |
@@ -52,7 +53,7 @@ Global elements: the arrival sheet, badge toasts, and a More menu with preferenc
 - **Static or curated:** all site content (eras, stories, hotspots, games, stamps) is typed data in `src/content/`. The English stories are curated from NHB/NLB sources.
 - **Draft:** the 中文 and Bahasa Melayu story versions are AI-assisted draft translations, labelled in the app. Tamil is not available and is shown as such.
 - **Sample:** two **sample memories** per site, seeded in `server/db.mjs`. They are labelled "Sample" and written as illustrative personal impressions with no facts.
-- **Browser-local:** guest progress, earned stamps, placements, badges, the current passport page and preferences live in `localStorage`. Memory drafts live in `sessionStorage`, and the admin token lives in `sessionStorage` for that tab only.
+- **Browser-local:** guest progress, earned stamps, placements, badges, the current passport page, preferences and the profile (name, map icon, badge board layout) live in `localStorage`. Memory drafts live in `sessionStorage`, and the admin token lives in `sessionStorage` for that tab only.
 - **Server:** memories (pending, approved, rejected or hidden) live in SQLite at `HEIRLOOM_DB_FILE`.
 - **Fallbacks:** device voice instead of ElevenLabs; transcript as a full alternative to listening; list instead of map tiles; paper backgrounds and "Photo unavailable" captions for photos that fail; a flat cover image when WebGL is missing; Past View when the camera is unavailable.
 - **Stretch (P2):** the Live Time Window is a labelled camera overlay preview, not tracked AR.
@@ -61,9 +62,9 @@ Global elements: the arrival sheet, badge toasts, and a More menu with preferenc
 ## 5. Passport earning, placement and persistence
 
 - **Earning:** "I've finished exploring" calls `progress.earnStamp(siteId)`. It is idempotent (one entitlement per site), and repeat visits show "Already in your passport". It never depends on the game, a memory, GPS, sound or sign-in.
-- **Earning and placing are separate.** "Stamp my passport" opens the book, turns to and zooms on a stamp page, and starts placing. "Place later" leaves the stamp in both trays.
-- **Placement:** free placement on pages p1–p6 with no slots. You can tap, drag, rotate, resize, use nudge/keyboard controls, and confirm with Stamp here or Cancel. The rotated footprint is clamped to the page.
-- **What's saved:** page ID, normalised centre `x`/`y`, `widthRatio`, `rotationDeg`, `zIndex` and timestamps on a fixed 88:125 page. Placements look the same at any size, on any layout and after reload.
+- **Earning and placing are separate.** "Stamp my passport" opens the 3D book, turns to and zooms on a stamp page, and starts placing. "Place later" leaves the stamp in both trays.
+- **Placement:** free placement on pages p1–p6 with no slots, directly on the 3D page. Drag a stamp from the tray onto a page, or tap one and then tap or drag on the page (the scene raycasts the finger onto the paper and reports a normalised spot). Rotate, resize, use nudge/keyboard controls, tap a page edge to carry the stamp to the next page, and confirm with Stamp here or Cancel. The rotated footprint is clamped to the page, and a new stamp starts on a clear part of it.
+- **What's saved:** page ID, normalised centre `x`/`y`, `widthRatio`, `rotationDeg`, `zIndex` and timestamps on a fixed 88:125 page. The same placement draws identically on the 3D page texture and in the flat book, at any size and after reload.
 - **Single save:** the save happens once, before the press animation and independently of it. Confirming again moves the stamp; it never duplicates it.
 - **Undo:** after a first placement, Undo returns the stamp to the tray. After a move, Undo restores the previous page, spot, size, rotation and layer. Delete returns a placed stamp to the tray and never removes the earned stamp.
 - **Limits:** everything is **in this browser only**, with no account and no cross-device sync. Clearing site data or the in-app reset erases it (the passport page says so). In private browsing it falls back to memory and warns.
@@ -86,11 +87,12 @@ Full table with evidence: [ACCEPTANCE.md](ACCEPTANCE.md).
    - **(b)** Reset now also forgets the memory identity and drafts.
    - **(c)** A repeat visit with an already-placed stamp offers "See it in my passport" instead of picking the stamp up.
    - **(d)** The "Full motion" preference now overrides the device's reduced-motion setting for CSS durations.
-4. **No screen-reader pass.** Labels, live regions and keyboard paths exist but haven't been verified with VoiceOver or TalkBack.
-5. **Content:** draft 中文 and Melayu translations need fluent review; Tamil is missing; one game photo identification (Thian Hock Keng, 1928) needs expert confirmation (see CONTENT_SOURCES §5).
-6. **Moderation is minimal:** a single shared token, no audit log, no reason entry in the UI (the API accepts `reason`). Reports auto-hide after 3 distinct reporters.
-7. **Production:** SQLite needs a persistent disk (`HEIRLOOM_DB_FILE`); the rate limits are in memory; OSM tiles are not for heavy traffic.
-8. **Narration:** device voices vary, and many lack Chinese or Malay voices (the app says so and offers the transcript). "Good Listener" relies on the speech `end` event.
+4. **The 3D passport hasn't been tried on a low-end phone.** It renders only when something changes and caps the pixel ratio at 2, but it hasn't been profiled on a real mid-range Android. If it struggles, "Flat pages" gives the 2D book with the same placements.
+5. **No screen-reader pass.** Labels, live regions and keyboard paths exist but haven't been verified with VoiceOver or TalkBack.
+6. **Content:** draft 中文 and Melayu translations need fluent review; Tamil is missing; one game photo identification (Thian Hock Keng, 1928) needs expert confirmation (see CONTENT_SOURCES §5).
+7. **Moderation is minimal:** a single shared token, no audit log, no reason entry in the UI (the API accepts `reason`). Reports auto-hide after 3 distinct reporters.
+8. **Production:** SQLite needs a persistent disk (`HEIRLOOM_DB_FILE`); the rate limits are in memory; OSM tiles are not for heavy traffic.
+9. **Narration:** device voices vary, and many lack Chinese or Malay voices (the app says so and offers the transcript). "Good Listener" relies on the speech `end` event.
 
 ## 8. Run and demo instructions
 

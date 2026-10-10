@@ -7,6 +7,8 @@ import { Sheet } from "../../components/Sheet";
 import { Tag } from "../../components/Media";
 import { formatDistance } from "../../services/arrival";
 import { useProgress } from "../../state/progress";
+import { useProfile } from "../../state/profile";
+import { findAvatar } from "../../content/avatars";
 import { STATUS_LABEL, useGeo } from "../location/geo-context";
 import { directionsUrl } from "../completion/Completion";
 import { LeafletMap } from "./LeafletMap";
@@ -17,6 +19,7 @@ export function MapPage() {
   const navigate = useNavigate();
   const geo = useGeo();
   const p = useProgress();
+  const me = useProfile();
   const [tilesFailed, setTilesFailed] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
   const mode = params.get("view") === "list" || tilesFailed ? "list" : "map";
@@ -74,7 +77,7 @@ export function MapPage() {
 
       {mode === "map" ? (
         <div className="mappage__map">
-          <LeafletMap sites={SITES} selectedId={selected?.id ?? null} visited={visited} onSelect={select} fix={locOn ? geo.fix : null} onTilesFailed={() => setTilesFailed(true)} />
+          <LeafletMap sites={SITES} selectedId={selected?.id ?? null} visited={visited} onSelect={select} fix={locOn ? geo.fix : null} meArt={findAvatar(me.avatar).art} onTilesFailed={() => setTilesFailed(true)} />
           {selected ? (
             <section className="map-panel card" aria-labelledby="map-panel-h">
               <IconButton label="Close place details" className="map-panel__close" onClick={() => select(null)}>

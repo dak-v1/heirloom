@@ -10,13 +10,25 @@ interface Props {
   earned: EarnedStamp[];
   placements: StampPlacement[];
   selectedId: string | null;
-  onPick: (earnedStampId: string, at?: { pageId: string; x: number; y: number }) => void;
+  onPick: (earnedStampId: string, at?: DropSpot) => void;
+  /** Where a stamp dropped at this screen point lands. Defaults to the flat book's pages. */
+  resolveDrop?: (clientX: number, clientY: number) => DropSpot | null;
+}
+
+type DropSpot = { pageId: string; x: number; y: number };
+
+/** Drop target in the flat book: the stampable page under the finger (the floating ghost ignores pointer events). */
+function domDrop(clientX: number, clientY: number): DropSpot | null {
+  const pageEl = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>(".book__slot [data-page-id]");
+  const pageId = pageEl?.dataset.pageId;
+  if (!pageEl || !pageId || !STAMPABLE_PAGE_IDS.includes(pageId)) return null;
+  return { pageId, ...pointToPage(pageEl.getBoundingClientRect(), clientX, clientY) };
 }
 
 const DRAG_THRESHOLD = 6;
 
 /** The stamp tray inside the book: tap a stamp to choose it, or drag it straight onto a page. */
-export function BookTray({ earned, placements, selectedId, onPick }: Props) {
+export function BookTray({ earned, placements, selectedId, onPick, resolveDrop = domDrop }: Props) {
   const [dragging, setDragging] = useState<{ id: string; x: number; y: number } | null>(null);
   const press = useRef<{ id: string; pointer: number; x: number; y: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
@@ -53,12 +65,8 @@ export function BookTray({ earned, placements, selectedId, onPick }: Props) {
     setDragging(null);
     if (!p || p.pointer !== e.pointerId || !p.moved) return;
     suppressClick.current = true;
-    // Drop: find the stampable page under the finger (the floating ghost ignores pointer events).
-    const pageEl = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>(".book__slot [data-page-id]");
-    const pageId = pageEl?.dataset.pageId;
-    if (!pageEl || !pageId || !STAMPABLE_PAGE_IDS.includes(pageId)) return;
-    const at = pointToPage(pageEl.getBoundingClientRect(), e.clientX, e.clientY);
-    onPick(p.id, { pageId, ...at });
+    const at = resolveDrop(e.clientX, e.clientY);
+    if (at) onPick(p.id, at);
   };
   const onClick = (id: string) => {
     if (suppressClick.current) {

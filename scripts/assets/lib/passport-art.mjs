@@ -1,8 +1,9 @@
 // Texture artwork for the 3D Heritage Passport. All sheets use an 880 × 1250
 // viewBox (88 × 125 mm passport proportions) unless noted.
 import { textPath, FONTS } from "./fonts.mjs";
-import { arcText } from "./brand.mjs";
+import { arcText, markSvg, orchidSvg, postmarkSvg, shophouseDividerSvg } from "./brand.mjs";
 import { P } from "./palette.mjs";
+import LAYOUT from "../../../src/content/passport-layout.json" with { type: "json" };
 
 export const COVER_W = 880;
 export const COVER_H = 1250;
@@ -115,34 +116,148 @@ export function endpaperSvg() {
 </svg>`;
 }
 
-/** First (identity) page shown when the cover opens. */
-export function identityPageSvg() {
-  const ink = P.ink;
-  let guilloche = "";
-  for (let k = 0; k < 36; k++) {
-    const a = (k / 36) * Math.PI * 2;
-    guilloche += `<ellipse cx="440" cy="560" rx="300" ry="120" transform="rotate(${((a * 180) / Math.PI).toFixed(1)} 440 560)"/>`;
+/* ------------------------------------------------------------------ */
+/* Interior pages. Recto = right-hand page (spine on its left);        */
+/* verso = left-hand page once its leaf is turned (spine on its right). */
+/* ------------------------------------------------------------------ */
+
+const PW = LAYOUT.page.w;
+const PH = LAYOUT.page.h;
+const dataUri = (svg) => `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+
+function paperBase(side, id) {
+  const spineX = side === "recto" ? 0 : PW;
+  const dir = side === "recto" ? 1 : -1;
+  return `<defs>
+  <radialGradient id="${id}-hi" cx="0.55" cy="0.42" r="0.75"><stop offset="0" stop-color="#FFFDF6" stop-opacity="0.75"/><stop offset="1" stop-color="#FFFDF6" stop-opacity="0"/></radialGradient>
+  <linearGradient id="${id}-gutter" x1="${spineX}" x2="${spineX + dir * 110}" y1="0" y2="0" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#2D2A23" stop-opacity="0.16"/><stop offset="0.35" stop-color="#2D2A23" stop-opacity="0.06"/><stop offset="1" stop-color="#2D2A23" stop-opacity="0"/>
+  </linearGradient>
+  <linearGradient id="${id}-edge" x1="${PW - spineX}" x2="${PW - spineX - dir * 50}" y1="0" y2="0" gradientUnits="userSpaceOnUse">
+    <stop offset="0" stop-color="#8D8574" stop-opacity="0.12"/><stop offset="1" stop-color="#8D8574" stop-opacity="0"/>
+  </linearGradient>
+  <filter id="${id}-fibre" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="5" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0 0 0 0 0.4  0 0 0 0 0.34  0 0 0 0 0.24  0 0 0 0.07 0"/>
+  </filter>
+</defs>
+<rect width="${PW}" height="${PH}" fill="${P.paperLight}"/>
+<rect width="${PW}" height="${PH}" fill="url(#${id}-hi)"/>
+<rect width="${PW}" height="${PH}" filter="url(#${id}-fibre)"/>`;
+}
+
+function paperShading(id) {
+  return `<rect width="${PW}" height="${PH}" fill="url(#${id}-gutter)"/>
+<rect width="${PW}" height="${PH}" fill="url(#${id}-edge)"/>
+<rect x="1.5" y="1.5" width="${PW - 3}" height="${PH - 3}" fill="none" stroke="${P.paperBorder}" stroke-width="3"/>`;
+}
+
+function decor(template, id) {
+  if (template === "guilloche") {
+    let a = "";
+    let b = "";
+    for (let r = 20; r < 1500; r += 22) a += `<circle cx="440" cy="1437" r="${r}"/>`;
+    for (let r = 28; r < 1500; r += 30) b += `<circle cx="440" cy="-187" r="${r}"/>`;
+    return `<g fill="none" stroke-width="2.4"><g stroke="${P.blue}" opacity="0.2">${a}</g><g stroke="${P.mustard}" opacity="0.18">${b}</g></g>`;
   }
+  if (template === "waves") {
+    let d = "";
+    for (let y = 40; y < PH; y += 75) {
+      for (const dy of [0, 19, 38]) {
+        d += `M-20 ${y + dy}`;
+        for (let x = -20; x < PW + 40; x += 67) d += " q16.75 -11 33.5 0 t33.5 0";
+      }
+    }
+    return `<path d="${d}" fill="none" stroke="${P.terracotta}" stroke-width="4" stroke-linecap="round" opacity="0.14"/>`;
+  }
+  if (template === "tiles") {
+    let d = "";
+    const t = 85;
+    for (let y = 0; y < PH + t; y += t) {
+      for (let x = 0; x < PW + t; x += t) {
+        if (((x + y) / t) % 2 === 0) d += `M${x} ${y - t / 2} L${x + t / 2} ${y} L${x} ${y + t / 2} L${x - t / 2} ${y} Z `;
+      }
+    }
+    return `<defs><radialGradient id="${id}-fade" cx="0.5" cy="0.55" r="0.62"><stop offset="0.45" stop-color="#000"/><stop offset="1" stop-color="#fff"/></radialGradient>
+<mask id="${id}-m" maskUnits="userSpaceOnUse" x="0" y="0" width="${PW}" height="${PH}"><rect width="${PW}" height="${PH}" fill="url(#${id}-fade)"/></mask></defs>
+<g mask="url(#${id}-m)"><path d="${d}" fill="${P.olive}" opacity="0.12"/></g>`;
+  }
+  if (template === "orchid") {
+    return `<image href="${dataUri(orchidSvg())}" x="${PW - 405 + 50}" y="${PH - 552 - 50}" width="405" height="552" opacity="0.24"/>`;
+  }
+  if (template === "shophouses") {
+    return `<g opacity="0.2"><image href="${dataUri(shophouseDividerSvg())}" x="-40" y="${PH - 300}" width="1936" height="194"/></g>`;
+  }
+  if (template === "plain") {
+    let d = "";
+    for (let y = PH * 0.2; y < PH * 0.9; y += 70) d += `M70 ${y.toFixed(1)} H${PW - 70} `;
+    return `<path d="${d}" stroke="${P.blue}" stroke-width="2.5" opacity="0.2"/>`;
+  }
+  if (template === "identity") {
+    let c = "";
+    for (let r = 30; r < 1600; r += 30) c += `<circle cx="0" cy="${PH}" r="${r}"/>`;
+    return `<g fill="none" stroke="${P.terracotta}" stroke-width="2.5" opacity="0.08">${c}</g>`;
+  }
+  return "";
+}
+
+function pageNumber(n, side) {
+  return textPath(String(n), { file: FONTS.display(600), size: 28, x: side === "recto" ? PW - 70 : 70, y: PH - 52, anchor: side === "recto" ? "end" : "start" }).d;
+}
+
+/** A stamp page (p1–p6): faint themed decoration, title and page number. Stamps are added at runtime. */
+export function stampPageSvg(page, side) {
+  const id = `pg-${page.id}`;
+  const title = textPath(page.title.toUpperCase(), { file: FONTS.display(700), size: 30, x: 70, y: 112, tracking: 0.16 });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PW} ${PH}">
+${paperBase(side, id)}
+${decor(page.template, id)}
+<path d="${title.d}" fill="${P.inkMuted}"/>
+<path d="M70 136 H${PW - 70}" stroke="${P.paperBorder}" stroke-width="2.5"/>
+<path d="${pageNumber(page.index + 1, side)}" fill="${P.inkMuted}"/>
+${paperShading(id)}
+</svg>`;
+}
+
+/** Identity page (recto of the first leaf). The runtime writes the visitor's details on the dotted lines. */
+export function identityPageSvg(index = 1) {
+  const id = "pg-identity";
+  const ink = P.ink;
   const t = (s, o) => textPath(s, { file: FONTS.display(o.w ?? 700), size: o.size, x: o.x ?? 440, y: o.y, anchor: o.anchor ?? "middle", tracking: o.tr ?? 0 }).d;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${COVER_W} ${COVER_H}">
-<rect width="${COVER_W}" height="${COVER_H}" fill="${P.paperLight}"/>
-<g fill="none" stroke="#9FB2C6" stroke-width="1.2" opacity="0.55">${guilloche}</g>
-<rect x="40" y="40" width="${COVER_W - 80}" height="${COVER_H - 80}" fill="none" stroke="${P.paperBorder}" stroke-width="3"/>
-<path d="${t("HERITAGE PASSPORT", { size: 50, y: 170, tr: 0.18 })}" fill="${P.terracotta}"/>
-<path d="${t("HEIRLOOM · SINGAPORE", { size: 22, y: 214, tr: 0.32, w: 600 })}" fill="${ink}"/>
-<path d="M120 252 H760" stroke="${P.terracotta}" stroke-width="2.5"/>
-<rect x="110" y="330" width="230" height="290" fill="${P.paper}" stroke="${ink}" stroke-width="2.5" stroke-dasharray="8 6"/>
-<path d="${t("YOUR", { size: 22, x: 225, y: 462, w: 600, tr: 0.2 })}${t("JOURNEY", { size: 22, x: 225, y: 494, w: 600, tr: 0.2 })}" fill="${P.inkMuted}"/>
-<path d="${t("THIS PASSPORT BELONGS TO", { size: 22, x: 380, y: 360, anchor: "start", w: 600, tr: 0.14 })}" fill="${P.inkMuted}"/>
-<path d="M380 420 H770" stroke="${ink}" stroke-width="2" stroke-dasharray="3 7"/>
-<path d="${t("PLACES EXPLORED", { size: 22, x: 380, y: 486, anchor: "start", w: 600, tr: 0.14 })}" fill="${P.inkMuted}"/>
-<path d="M380 546 H770" stroke="${ink}" stroke-width="2" stroke-dasharray="3 7"/>
-<path d="${t("FIRST STAMP", { size: 22, x: 380, y: 600, anchor: "start", w: 600, tr: 0.14 })}" fill="${P.inkMuted}"/>
-<path d="M380 660 H770" stroke="${ink}" stroke-width="2" stroke-dasharray="3 7"/>
-<path d="${textPath("Every street has a story.", { file: FONTS.script(700), size: 64, x: 440, y: 840, anchor: "middle" }).d}" fill="${P.terracotta}"/>
-<path d="${textPath("Walk it, listen to it, and leave your own memory behind.", { file: FONTS.script(500), size: 36, x: 440, y: 900, anchor: "middle" }).d}" fill="${ink}"/>
-<path d="${t("A KEEPSAKE FROM THE HEIRLOOM APP — NOT AN OFFICIAL TRAVEL DOCUMENT", { size: 15, y: 1130, w: 600, tr: 0.12 })}" fill="${P.inkMuted}"/>
-<path d="${t("1", { size: 26, y: 1190, w: 600 })}" fill="${P.inkMuted}"/>
+  const fx = LAYOUT.identityFieldX;
+  const fields = LAYOUT.identityFields
+    .map((f) => `<path d="${t(f.label, { size: 21, x: fx, y: f.labelY, anchor: "start", w: 600, tr: 0.16 })}" fill="${P.inkMuted}"/><path d="M${fx} ${f.lineY} H${PW - 90}" stroke="${ink}" stroke-width="2" stroke-dasharray="3 7"/>`)
+    .join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PW} ${PH}">
+${paperBase("recto", id)}
+${decor("identity", id)}
+<path d="${t("HEIRLOOM · SINGAPORE", { size: 22, y: 150, tr: 0.32, w: 600 })}" fill="${P.terracotta}"/>
+<path d="${t("Heritage Passport", { size: 62, y: 228, w: 700 })}" fill="${ink}"/>
+<path d="M120 262 H${PW - 120}" stroke="${P.terracotta}" stroke-width="2.5"/>
+<rect x="${LAYOUT.identityPhoto.x}" y="${LAYOUT.identityPhoto.y}" width="${LAYOUT.identityPhoto.w}" height="${LAYOUT.identityPhoto.h}" rx="4" fill="${P.paper}" stroke="${ink}" stroke-width="2.5" stroke-dasharray="8 6"/>
+<image href="${dataUri(markSvg({ size: 512 }))}" x="168" y="372" width="100" height="100"/>
+<path d="${t("YOUR", { size: 21, x: 218, y: 532, w: 600, tr: 0.2 })}${t("JOURNEY", { size: 21, x: 218, y: 562, w: 600, tr: 0.2 })}" fill="${P.inkMuted}"/>
+${fields}
+<path d="${textPath("Every street has a story.", { file: FONTS.script(700), size: 64, x: 440, y: 890, anchor: "middle" }).d}" fill="${P.terracotta}"/>
+<path d="${textPath("Walk it, listen to it, and leave your own memory behind.", { file: FONTS.script(500), size: 34, x: 440, y: 946, anchor: "middle" }).d}" fill="${ink}"/>
+<image href="${dataUri(postmarkSvg({ color: P.terracotta }))}" x="70" y="960" width="230" height="140" opacity="0.45" transform="rotate(-8 185 1030)"/>
+<path d="${t("A KEEPSAKE OF YOUR WALK, SAVED IN THIS BROWSER", { size: 15, y: 1132, w: 600, tr: 0.12 })}${t("NOT AN OFFICIAL TRAVEL DOCUMENT", { size: 15, y: 1158, w: 600, tr: 0.12 })}" fill="${P.inkMuted}"/>
+<path d="${pageNumber(index + 1, "recto")}" fill="${P.inkMuted}"/>
+${paperShading(id)}
+</svg>`;
+}
+
+/** The decorative final verso (behind the last stamp page). */
+export function endPageSvg() {
+  const id = "pg-end";
+  const t = (s, o) => textPath(s, { file: FONTS.display(o.w ?? 700), size: o.size, x: o.x ?? 440, y: o.y, anchor: "middle", tracking: o.tr ?? 0 }).d;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${PW} ${PH}">
+${paperBase("verso", id)}
+<image href="${dataUri(postmarkSvg({ color: P.inkMuted }))}" x="260" y="330" width="360" height="220" opacity="0.5"/>
+<path d="${t("MORE STORIES TO COME", { size: 30, y: 650, tr: 0.22 })}" fill="${P.inkMuted}"/>
+<path d="${textPath("Singapore, always a good story.", { file: FONTS.script(700), size: 54, x: 440, y: 730, anchor: "middle" }).d}" fill="${P.terracotta}"/>
+<g opacity="0.25"><image href="${dataUri(shophouseDividerSvg())}" x="-40" y="${PH - 300}" width="1936" height="194"/></g>
+${paperShading(id)}
 </svg>`;
 }
 

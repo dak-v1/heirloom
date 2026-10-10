@@ -91,7 +91,7 @@ export function PrivacyPage() {
       <p>You can use everything without signing up. Your passport belongs to an anonymous ID created in this browser.</p>
       <h2>Your progress stays in this browser</h2>
       <p>
-        Visits, stamps, badges and game scores are saved in this browser's local storage. They are not sent to a server, and they don't sync between devices. Clearing this site's data, or using private browsing, removes them. You can also reset them from the menu.
+        Visits, stamps, badges, game scores and your profile (the name you choose, your map icon and how you arrange your badge board) are saved in this browser's local storage. They are not sent to a server, and they don't sync between devices. Clearing this site's data, or using private browsing, removes them. You can also reset them from the menu.
       </p>
       <h2>Location</h2>
       <p>

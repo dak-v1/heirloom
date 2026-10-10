@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createProgressService } from "../src/services/progress";
 import { createMemoryStore } from "../src/services/storage";
 import { PAGE_ASPECT, STAMP_ASPECT, STAMP_WIDTH } from "../src/content/passport";
-import { moveTo, nudge, overlapsAny, pointToPage, resize, rotate, undoPlacement } from "../src/features/passport/placement";
+import { freeSpot, moveTo, nudge, overlapsAny, pointToPage, resize, rotate, undoPlacement } from "../src/features/passport/placement";
 
 function setup() {
   let t = new Date("2026-10-10T09:00:00+08:00").getTime();
@@ -87,5 +87,14 @@ describe("placement geometry", () => {
     const s = { x: 0.5, y: 0.5, widthRatio: 0.38, rotationDeg: 0 };
     expect(overlapsAny(s, [{ ...s, x: 0.55 }])).toBe(true);
     expect(overlapsAny(s, [{ ...s, x: 0.5, y: 0.05 }])).toBe(false);
+  });
+
+  it("starts a new stamp clear of the ones already on the page", () => {
+    expect(freeSpot([])).toMatchObject({ x: 0.5, y: 0.45 });
+    const taken = [freeSpot([])];
+    const next = freeSpot(taken);
+    expect(overlapsAny(next, taken)).toBe(false);
+    taken.push(next);
+    expect(overlapsAny(freeSpot(taken), taken)).toBe(false);
   });
 });

@@ -1,7 +1,7 @@
 // Pure placement helpers shared by the passport book UI and tests. Every change to a
 // stamp's spot goes through `clampPlacement`, so the rotated stamp always stays on the paper.
 
-import { PAGE_ASPECT } from "../../content/passport";
+import { PAGE_ASPECT, STAMP_WIDTH } from "../../content/passport";
 import { clampPlacement, type ProgressService, type StampPlacement } from "../../services/progress";
 
 export interface Spot {
@@ -33,6 +33,24 @@ export function overlapsAny(s: Spot, others: Spot[]) {
     const dy = (s.y - o.y) / PAGE_ASPECT;
     return Math.hypot(dx, dy) < ((s.widthRatio + o.widthRatio) / 2) * 0.8;
   });
+}
+
+/** Where a newly chosen stamp starts: the first of a few tidy spots that doesn't cover another stamp. */
+export function freeSpot(others: Spot[], widthRatio = STAMP_WIDTH.default): Spot {
+  const spots = [
+    [0.5, 0.45],
+    [0.3, 0.3],
+    [0.7, 0.3],
+    [0.3, 0.7],
+    [0.7, 0.7],
+    [0.5, 0.78],
+    [0.5, 0.22],
+  ];
+  for (const [x, y] of spots) {
+    const s = fit({ x, y, widthRatio, rotationDeg: 0 });
+    if (!overlapsAny(s, others)) return s;
+  }
+  return fit({ x: 0.5, y: 0.45, widthRatio, rotationDeg: 0 }); // a full page: overlapping is allowed
 }
 
 /** Short text for the screen-reader live region. */
