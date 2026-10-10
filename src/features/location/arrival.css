@@ -1,0 +1,50 @@
+/* Arrival sheet: global (it can open on any page). */
+.arrival-one {
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+}
+.arrival-one__stamp {
+  width: 84px;
+  flex: none;
+  transform: rotate(-5deg);
+  filter: drop-shadow(0 4px 8px rgb(45 42 35 / 0.3));
+}
+.arrival-one__meta {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-muted);
+}
+.arrival-one__meta svg {
+  display: inline-block;
+  vertical-align: -2px;
+}
+.arrival-actions {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+.arrival-choices {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-3) 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.arrival-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1.5px solid var(--paper-border);
+  border-radius: var(--radius-m);
+  background: var(--paper-light);
+  text-align: left;
+}
+.arrival-choice span {
+  display: grid;
+}
+.arrival-choice strong {
+  font-family: var(--font-display);
+}

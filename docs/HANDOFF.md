@@ -1,0 +1,130 @@
+# Stage 1 → Stage 2 handoff
+
+**From:** Perynn (Stage 1: foundation, discovery, arrival, site experience, game, stamp earning)
+**To:** teammate (Stage 2: memories, interactive passport, placement and stamping animation, final QA)
+
+Read this first, then run the app and reproduce the demo below before editing.
+
+## 1. Checkpoint
+
+| Item | Value |
+| --- | --- |
+| Repository | `https://github.com/dak-v1/heirloom` |
+| Branch / commit | *Fill in when the Stage 1 work is committed (it is uncommitted in the working tree at the time of writing).* |
+| Node | 22.13+ (tested on 22.18.0) |
+| Tests | `npm test`: 31 passing (progress, arrival, scoring/content, memories API) |
+| Build | `npm run build` passes with no type errors |
+
+## 2. Run it
+
+```bash
+npm install
+npm run dev            # web :5173, API :8787 (proxied as /api)
+npm test
+```
+
+Phone testing needs HTTPS for location and camera: `npm run dev:https` (plus `npm run dev:api` in another terminal), then open `https://<LAN-IP>:5173` and accept the self-signed certificate.
+
+Optional `.env` (see `.env.example`): `HEIRLOOM_ADMIN_TOKEN` enables moderation endpoints; `HEIRLOOM_GUEST_SECRET` keeps guest tokens valid across restarts. Transfer real values privately, never in git.
+
+## 3. Demo script (the Stage 1 journey)
+
+1. **Home** → *Start exploring* (or *Find places near me*).
+2. **Arrive**: Map → *Demo: simulate arrival* → *Arrive at Thian Hock Keng*. The sheet is labelled **Demo**. Tap *Explore this place*. (Manual path: tap a stamp marker or the List → *I'm here*.) The same menu has two imprecise readings that show the "Are you at…?" and "A few places are nearby" sheets.
+3. **See the past** → *Past View*. Switch eras on the timeline (c. 1890, 1930–60, Today). Tap numbered hotspots; *All details* lists them as text. The ⓘ button shows credits, licence and date basis.
+4. **Listen**: mini-player or step 2. Narration uses the device voice (labelled). Open the transcript; switch to 中文 / Melayu (draft labels); Tamil shows as not yet available.
+5. **Play** (optional): *Guess the Year*, 3 rounds, or *Skip for now*.
+6. **Leave a memory** (optional): currently an explained "next build" state with *Continue without sharing*.
+7. **Finish**: *I've finished exploring* → stamp reward → *Stamp my passport* (opens `/passport?place=<earnedStampId>`) or *Place later* (toast; stamp waits in the tray).
+8. Refresh: progress, badges and the earned stamp persist; finishing again shows "Already in your passport" (no duplicate).
+9. **Next on the trail** card → next site, directions or map.
+
+## 4. What Stage 1 built
+
+| Route | Purpose | Notes |
+| --- | --- | --- |
+| `/` | Home: start, find nearby, continue visit, trail cards, passport preview | |
+| `/map` | Leaflet map (OSM tiles, sepia) + accessible list, "I'm here", directions, demo arrival | `?view=list`, `?site=<id>` |
+| `/site/:slug` | Visit journey (6 steps) | overlays in the URL so Back closes them: `?view=past`, `?view=live`, `?play=1` |
+| `/passport` | **Stage 1 placeholder**: 3D passport (open/close), counts, stamp tray, badges | `?place=<earnedStampId>` shows a "next build" notice |
+| `/about`, `/privacy`, `/terms` | Sources, image licences, permissions, community rules | Stage 2 to finalise wording for memories |
+| `/dev/hotspots` | Dev-only hotspot calibration grid | Not in production builds |
+
+Global: `ArrivalSheet` (location suggestions), badge toasts, More menu (preferences: motion, sound effects, default story language; location on/off; demo tools; reset progress).
+
+## 5. Data, identity and storage
+
+### Content (`src/content/`)
+- `sites/*.ts`: one file per site; `types.ts` documents every field. Stable IDs/slugs: `thian-hock-keng`, `sri-mariamman-temple`, `sultan-mosque`.
+- Each site: `eras[]` (image + caption + hotspots, `isToday` for the present), `story` (versions per language, `version` number), `ambient[]`, `game` (Guess the Year rounds with accepted year intervals), `stamp` (art, ink art, date band), `nextSiteId`, `arrivalRadius` (m), `coords`.
+- `commons.ts` is generated from the Wikimedia API (URLs, sizes, licences). `media.ts` merges curated metadata. `commons-local.json` overrides URLs after `npm run media:vendor`.
+- `sources.ts`: every factual claim cites one of these IDs. `badges.ts`, `languages.ts`, `passport.ts` (logical pages, aspect ratios).
+
+### Guest identity and progress (browser-local)
+- `src/services/progress.ts` (`createProgressService`) → app instance in `src/state/progress.ts` (`progress`, `useProgress()`).
+- Stored in `localStorage["heirloom:progress:v1"]` with an opaque `guestId`. Falls back to memory if storage is blocked (`progress.persistent === false`; the passport page warns). No server sync, no cross-device sync.
+- Server-side guest identity exists only for memories: `POST /api/guest` returns a signed token, stored in `localStorage["heirloom:guest-token:v1"]` by `src/services/memories.ts`.
+
+### Interfaces (plan §5)
+
+| Interface | Status | Where |
+| --- | --- | --- |
+| `getSite(idOrSlug)` | ✅ as `findSite()` | `src/content/sites/index.ts` |
+| `getVisitorProgress()` | ✅ | `progress.getVisitorProgress()` / `useProgress()` |
+| `earnStamp(siteId)` | ✅ idempotent, unit-tested | `progress.earnStamp(siteId, stampDesignId)` → `{ stamp, isNew, newBadges }` |
+| `getPassportPlacements()` | ✅ storage only (returns `[]` until Stage 2 places stamps) | `progress.getPassportPlacements()` |
+| `saveStampPlacement(earnedStampId, placement)` | ✅ storage + validation, unit-tested; **no UI yet** | `progress.saveStampPlacement(id, { pageId, x, y, widthRatio, rotationDeg, zIndex? })`, `progress.removeStampPlacement(id)` for undo |
+| `submitMemory(siteId, draft)` | ✅ client + server, API-tested; **no UI yet** | `src/services/memories.ts` → `POST /api/memories` |
+| `getApprovedMemories(siteId)` | ✅ client + server | `GET /api/sites/:siteId/memories` (approved only) |
+
+Also available: `progress.getUnplacedStamps()`, `hasEarned()`, `recordHotspotOpened/LanguageUsed/NarrationCompleted/GameResult`, `setCurrentPassportPage()`, `onBadges(listener)`, `resetProgress()`; and `clampPlacement()` (keeps a rotated stamp inside the page).
+
+### Placement contract (for the passport book)
+- Logical page: `PAGE_ASPECT = 88/125` (width/height). Coordinates are **normalised to the page**: `x` 0–1 of width, `y` 0–1 of height, centre of the stamp.
+- `widthRatio`: stamp width / page width, clamped to `STAMP_WIDTH` (`min 0.22`, `default 0.38`, `max 0.55`). Stamp art aspect `STAMP_ASPECT = 300/380`.
+- `rotationDeg` normalised to −180…180; `clampPlacement` keeps the rotated footprint inside the page (tested at several angles).
+- Stampable page IDs: `p1`–`p6` (`cover` and `identity` are not stampable). See `PASSPORT_PAGES` for titles/templates.
+- One placement per earned stamp: saving again **moves** it (same placement ID). New placements go on top (`zIndex`).
+
+### Memories API (server/app.mjs) — rules already enforced server-side
+- `POST /api/memories` (header `x-heirloom-guest: <token>`): `{ siteId, type: "note"|"drawing", text?, drawing? (PNG data URL), displayName? }` → always `pending`. Limits: note ≤ 500 chars, name ≤ 40, PNG ≤ 350 KB and ≤ 1200 px per side, 5 submissions / 10 min per guest and per IP. Text is stored plain and must be **rendered as text**.
+- `GET /api/sites/:siteId/memories` → approved only. `GET /api/me/memories` → the guest's own items with status (no moderation reason).
+- `GET /api/memories/:id/drawing.png` → only when approved (or with the moderator token).
+- `POST /api/memories/:id/report` → hides an approved memory after 3 reports.
+- Moderation (`Authorization: Bearer $HEIRLOOM_ADMIN_TOKEN`): `GET /api/admin/memories?status=pending`, `POST /api/admin/memories/:id/approve|reject|hide` (`{ reason? }`). Without the env var these return 503.
+- Storage: SQLite (`node:sqlite`) at `HEIRLOOM_DB_FILE`. Needs a persistent disk in production.
+
+## 6. Connection points for Stage 2
+
+- **Finish → earn**: `SitePage.finish()` calls `progress.earnStamp(site.id, site.stamp.id)` and shows `StampReward` (`src/features/completion/Completion.tsx`). Insert the optional memory step *before* this; do not gate earning on it.
+- **"Stamp my passport"** navigates to `/passport?place=<earnedStampId>`. Replace the notice in `PassportPage.tsx` with the real placement flow (select page → ghost preview → tap/drag/rotate → *Stamp here* → animation → `saveStampPlacement`).
+- **"Place later"** already works: the stamp stays in `progress.getUnplacedStamps()` (the tray).
+- **Memory step**: replace the "next build" sheet in `SitePage.tsx` (`sheet === "memory"`) with the composer; call `submitMemory()`; award the `memory-keeper` badge (art ready; it's marked `comingSoon` in `badges.ts`, remove that flag).
+- **Analytics** (local only): `track("stamp_placed" | "memory_submitted", …)` in `src/services/analytics.ts`.
+
+## 7. Assets ready for Stage 2
+
+See [ASSETS.md](ASSETS.md) for specs.
+- Ink impressions for placed stamps: `public/assets/stamps/<site>-ink.svg` with a blank band for the visit date (`site.stamp.dateBand`, normalised). Print `formatVisitDate(stamp.visitDate)` there in CSS.
+- Rubber stamp tool: `public/assets/3d/rubber-stamp.glb` (3D) and `public/assets/decor/stamp-tool.svg` (2D, for a CSS-perspective animation as the spec prefers).
+- Stamp sound: `playStampThunk()` in `src/services/audio/sfx.ts` (check `getPreferences().soundEffects`).
+- 3D passport: `public/assets/3d/heirloom-passport.glb` with a hinged `FrontCover` node and an `Open` animation; viewer in `src/features/passport/Passport3D.tsx`. Page textures (endpaper, identity page) are generated in `scripts/assets/lib/passport-art.mjs` and can be exported as images for the 2D page UI.
+- Paper texture tile: `public/assets/textures/paper-grain.png` (256 px, transparent). Decorative: `postmark*.svg`, `waves*.svg`, `orchid.svg`, `shophouses.svg`.
+
+## 8. Remaining scope (Stage 2)
+
+1. Memories: composer (note + drawing canvas with palette, pen, undo, clear, blank validation, draft preservation), scrapbook wall of approved memories (label samples), protected moderation view or documented curl workflow, report action.
+2. Interactive passport: cover/identity/stamp pages, page flip (buttons + swipe, reduced-motion variant, "Page n of 8"), tray, free placement (tap/drag/rotate/size within bounds), confirm/cancel, dimensional stamping animation (0.6–1.2 s), undo and later repositioning, accessible non-drag controls, persistence across reload/resize.
+3. Connect the final journey, finish About/Privacy/Terms for memories, run the acceptance checklist on real phones.
+
+## 9. Known issues and limitations (most severe first)
+
+1. **Real GPS arrival is untested on a device in Singapore.** Logic (debounce, hysteresis, cooldown, approximate and multiple matches, dismissal) is unit-tested; the demo simulations (exact, approximate, multiple) and the denied-permission path were tested in a browser. Arrival radii (90–120 m) may need tuning on site.
+2. **Live Time Window camera overlay is untested with a real camera** (the test browser blocks cameras). The denied/unavailable fallback was tested. It is labelled a preview, not tracked AR.
+3. Translations: 中文 and Bahasa Melayu are AI-assisted drafts labelled as such; they need review by fluent speakers. Tamil is not available. Local-script site names (stamps, headers) should also be checked.
+4. Photographs are hotlinked from Wikimedia Commons. For a venue with poor connectivity, run `npm run media:vendor` (downloads ~16 images × 3 sizes) and rebuild.
+5. Map tiles come from OpenStreetMap's standard tile server, which allows light use only. For real launch traffic switch to a provider with an API key.
+6. Device text-to-speech quality varies, and many devices lack Chinese or Malay voices (the app says so and offers the transcript). ElevenLabs narration is scripted but no key was available, so it is **not configured or tested**.
+7. One game photo (Thian Hock Keng, 14 April 1928) is identified as Thian Hock Keng by us, not the archive; it is labelled in-app and in the source register.
+8. Badge award for "Good Listener" relies on the speech engine's `end` event; some browsers end speech early when backgrounded.
+9. Dev only: React Fast Refresh fully reloads some modules that export hooks; if you see a stale-context error after editing, refresh the page.

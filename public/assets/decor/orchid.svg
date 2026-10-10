@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 300" width="220" height="300">
+<title>Orchid sprig</title>
+<path d="M110 296 C112 240 104 190 116 140 C124 108 140 86 150 60" fill="none" stroke="#687758" stroke-width="3" stroke-linecap="round"/>
+<path d="M112 250 C80 240 54 214 40 180 C72 192 98 214 112 250 Z" fill="none" stroke="#687758" stroke-width="2"/>
+<path d="M112 250 C90 230 66 206 40 180" fill="none" stroke="#687758" stroke-width="1"/>
+<path d="M110 214 C138 204 164 180 176 150 C148 160 124 182 110 214 Z" fill="none" stroke="#687758" stroke-width="2"/>
+<path d="M110 214 C132 196 154 174 176 150" fill="none" stroke="#687758" stroke-width="1"/>
+<g transform="translate(150 58) rotate(18) scale(1.15)">
+    <path d="M0 0 C-10 -6 -26 -4 -30 -16 C-22 -20 -8 -14 0 -2 Z" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.4"/>
+    <path d="M0 0 C10 -6 26 -4 30 -16 C22 -20 8 -14 0 -2 Z" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.4"/>
+    <path d="M0 -2 C-6 -14 -6 -28 0 -36 C6 -28 6 -14 0 -2 Z" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.4"/>
+    <path d="M0 0 C-8 6 -20 10 -24 22 C-14 22 -6 14 0 4 Z" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.4"/>
+    <path d="M0 0 C8 6 20 10 24 22 C14 22 6 14 0 4 Z" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.4"/>
+    <path d="M0 2 C-9 8 -10 22 0 30 C10 22 9 8 0 2 Z" fill="#5B3F4A" opacity="0.85"/>
+    <path d="M-2 10 C-1 16 1 20 0 26 M2 10 C3 15 2 19 2 24" fill="none" stroke="#E9D3DA" stroke-width="0.9"/>
+    <circle cx="0" cy="1" r="2.6" fill="#BC9545" stroke="#5B3F4A" stroke-width="0.8"/>
+  </g>
+<g transform="translate(108 120) rotate(-16) scale(1.05)">
+    <path d="M0 0 C-10 -6 -26 -4 -30 -16 C-22 -20 -8 -14 0 -2 Z" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.4"/>
+    <path d="M0 0 C10 -6 26 -4 30 -16 C22 -20 8 -14 0 -2 Z" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.4"/>
+    <path d="M0 -2 C-6 -14 -6 -28 0 -36 C6 -28 6 -14 0 -2 Z" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.4"/>
+    <path d="M0 0 C-8 6 -20 10 -24 22 C-14 22 -6 14 0 4 Z" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.4"/>
+    <path d="M0 0 C8 6 20 10 24 22 C14 22 6 14 0 4 Z" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.4"/>
+    <path d="M0 2 C-9 8 -10 22 0 30 C10 22 9 8 0 2 Z" fill="#5B3F4A" opacity="0.85"/>
+    <path d="M-2 10 C-1 16 1 20 0 26 M2 10 C3 15 2 19 2 24" fill="none" stroke="#E9D3DA" stroke-width="0.9"/>
+    <circle cx="0" cy="1" r="2.6" fill="#BC9545" stroke="#5B3F4A" stroke-width="0.8"/>
+  </g>
+<path d="M138 100 q6 -4 10 -12 M126 160 q-8 -6 -12 -14" fill="none" stroke="#687758" stroke-width="2" stroke-linecap="round"/>
+<ellipse cx="150" cy="102" rx="5" ry="9" transform="rotate(30 150 102)" fill="#E9D3DA" stroke="#5B3F4A" stroke-width="1.2"/>
+</svg>

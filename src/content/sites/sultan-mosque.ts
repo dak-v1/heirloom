@@ -1,0 +1,285 @@
+import { commonsImage } from "../media";
+import type { Site } from "../types";
+
+const DRAFT_NOTE = "Draft translation prepared with AI assistance and awaiting review by a fluent community reviewer. The English version is the curated reference.";
+
+const c1930 = commonsImage("sm-c1930", {
+  alt: "Black-and-white street view towards Sultan Mosque's dome and a slender tower, with shophouses, a tall Chinese shop signboard on the left and people in the road.",
+  kind: "archival-photo",
+  archiveTitle: "Sultan Mosque in Kampong Glam, Singapore (Sultansmoskee in Kampong Glam te Singapore)",
+  dateLabel: "c. 1930",
+  dateRange: [1928, 1935],
+  dateBasis: "Catalogued as 'circa 1930' by Leiden University Libraries (KITLV 405292).",
+});
+
+const y1973 = commonsImage("sm-1973", {
+  alt: "Colour photograph of the mosque's front with a vintage car in the road, a Coca-Cola sign and a photo studio sign on the left.",
+  kind: "archival-photo",
+  archiveTitle: "Singapore - Masjid Sultan in 1973/74",
+  dateLabel: "1973/74",
+  dateRange: [1973, 1974],
+  dateBasis: "Dated 1973/74 by the photographer, Rainer Halama.",
+});
+
+const today = commonsImage("sm-2019", {
+  alt: "Colour photograph looking down palm-lined Bussorah Street to the mosque's golden dome.",
+  kind: "present-photo",
+  archiveTitle: "Bussorah Street and Masjid Sultan, Singapore, 2019",
+  dateLabel: "2019",
+  dateRange: [2019, 2019],
+  dateBasis: "Photographed August 2019 (file metadata).",
+});
+
+const game1930 = commonsImage("sm-c1930-postcard", {
+  alt: "Postcard of the mosque's dome and tall tower above a wet street, with two men standing in the foreground.",
+  kind: "archival-postcard",
+  archiveTitle: "Mosque on North Bridge Road, Singapore (Moskee aan North Bridge Road te Singapore)",
+  dateLabel: "c. 1930",
+  dateRange: [1928, 1935],
+  dateBasis: "Catalogued as published circa 1930 by Leiden University Libraries (KITLV 104793).",
+});
+
+const game1935 = commonsImage("sm-1935-60", {
+  alt: "Postcard of the mosque under a cloudy sky, its dome and tower rising above a quiet street.",
+  kind: "archival-postcard",
+  archiveTitle: "Moslem Mosque Singapore",
+  dateLabel: "Between 1935 and 1960",
+  dateRange: [1935, 1960],
+  dateBasis: "Catalogued as published between 1935 and 1960 by Leiden University Libraries (KITLV 1404741).",
+  limitations: "Only a 25-year date range is known.",
+});
+
+export const sultanMosque: Site = {
+  id: "sultan-mosque",
+  slug: "sultan-mosque",
+  name: "Sultan Mosque",
+  localName: { text: "مسجد سلطان", lang: "ms-Arab", script: "Jawi", gloss: "Masjid Sultan, Sultan Mosque" },
+  area: "Kampong Glam",
+  address: "3 Muscat Street",
+  coords: { lat: 1.3022, lng: 103.859 },
+  arrivalRadius: 120,
+  tagline: "A royal mosque rebuilt by a whole community.",
+  summary:
+    "First built after the 1824 treaty that recognised Kampong Glam as the royal family's estate, and rebuilt between 1928 and 1932 to Denis Santry's Indo-Saracenic design.",
+  visitNote: "Sultan Mosque is an active mosque. Dress modestly, remove your shoes where asked and check visiting times before entering.",
+  accent: "olive",
+  eras: [
+    {
+      id: "c1930",
+      label: "c. 1930",
+      sortYear: 1930,
+      image: c1930,
+      caption: "The new mosque around 1930, when it was newly built or still being finished.",
+      hotspots: [
+        {
+          id: "bottles",
+          x: 0.36,
+          y: 0.37,
+          label: "Golden dome",
+          title: "A band of bottles",
+          body: "Look at the dark band at the base of the dome. It is made of glass bottles donated by poorer members of the community as their contribution to building the mosque.",
+          kind: "fact",
+          sourceIds: ["roots-sultan"],
+        },
+        {
+          id: "new",
+          x: 0.35,
+          y: 0.56,
+          label: "Brand new",
+          title: "A brand-new mosque",
+          body: "Building began in 1928, after fundraising stalled during the slump of 1926 and 1927, and the mosque was completed in 1932. When this photograph was taken it was brand new or still being finished.",
+          kind: "fact",
+          sourceIds: ["roots-sultan"],
+        },
+        {
+          id: "signboard",
+          x: 0.07,
+          y: 0.6,
+          label: "Shop sign",
+          title: "A sign in Chinese",
+          body: "A tall shop signboard lettered in Chinese characters hangs beside the street. Shophouses and businesses lined the roads around the mosque.",
+          kind: "observation",
+          sourceIds: [],
+        },
+      ],
+    },
+    {
+      id: "1973",
+      label: "1973/74",
+      sortYear: 1973,
+      image: y1973,
+      caption: "A colour photograph from 1973 or 1974, by Rainer Halama.",
+      hotspots: [
+        {
+          id: "monument",
+          x: 0.45,
+          y: 0.42,
+          label: "National monument",
+          title: "Just before national-monument status",
+          body: "Sultan Mosque was gazetted as a national monument in 1975, shortly after this photograph was taken.",
+          kind: "fact",
+          sourceIds: ["roots-sultan-collection"],
+        },
+        {
+          id: "signs",
+          x: 0.1,
+          y: 0.44,
+          label: "Shop signs",
+          title: "Everyday signs",
+          body: "A photo studio's sign and a soft-drink advertisement hang beside the street: everyday commerce right next to the mosque.",
+          kind: "observation",
+          sourceIds: [],
+        },
+      ],
+    },
+    {
+      id: "today",
+      label: "Today",
+      sortYear: 2019,
+      isToday: true,
+      image: today,
+      caption: "Bussorah Street and the mosque in 2019.",
+      hotspots: [
+        {
+          id: "domes",
+          x: 0.555,
+          y: 0.42,
+          label: "Golden dome",
+          title: "Two golden domes",
+          body: "Two large golden domes sit at either end of the prayer hall. One caps the main entrance foyer; the other crowns the mausoleum of Sultan Alauddin Alam Shah and other members of the royal family. Each is ringed with glass bottles at its base.",
+          kind: "fact",
+          sourceIds: ["roots-sultan"],
+        },
+        {
+          id: "prayer-hall",
+          x: 0.6,
+          y: 0.62,
+          label: "Prayer hall",
+          title: "Room for 5,000",
+          body: "The two-storey prayer hall holds up to 5,000 worshippers. It is set at an angle to the street so that it faces the qibla, the direction of Mecca.",
+          kind: "fact",
+          sourceIds: ["roots-sultan"],
+        },
+        {
+          id: "bazaar",
+          x: 0.17,
+          y: 0.66,
+          label: "Ramadan bazaar",
+          title: "A street that becomes a bazaar",
+          body: "Each year the start of Ramadan is announced at the mosque, and the surrounding streets become a bazaar during the fasting month.",
+          kind: "fact",
+          sourceIds: ["roots-sultan"],
+        },
+      ],
+    },
+  ],
+  story: {
+    id: "sm-story",
+    version: 1,
+    scope: "One story covers the mosque from the 1824 treaty to today. It does not change with the timeline.",
+    sourceIds: ["roots-sultan", "infopedia-sultan", "roots-sultan-collection"],
+    versions: {
+      en: {
+        lang: "en",
+        title: "A mosque built by many hands",
+        status: "curated",
+        paragraphs: [
+          "In 1824, Sultan Hussein Shah of Johor signed an agreement with the British East India Company that ceded Singapore to the British as a trading port. The British agreed to pay the Sultan and his descendants an annual stipend and recognised Kampong Glam as the royal family's estate. Land beside the Sultan's palace, the Istana Kampong Glam, was set aside for a royal mosque.",
+          "Stamford Raffles pledged 3,000 Spanish dollars from the Company towards the building. The first mosque was a modest single-storey brick building with a two-tiered pitched roof.",
+          "A century later it needed major repairs, and in 1924 the trustees approved a larger mosque on the same site. They commissioned the Irish architect Denis Santry of Swan & Maclaren, who blended Indian, Islamic and European ideas in the Indo-Saracenic style. Fundraising stalled during a global slump in 1926 and 1927; building began in 1928, and the new mosque was completed in 1932.",
+          "Look closely at the base of each golden dome. The dark band is made of glass bottles, donated by poorer members of the community as their contribution to the construction.",
+          "The prayer hall holds up to 5,000 worshippers. Each year the start of Ramadan is announced here, and the streets around the mosque become a bazaar during the fasting month.",
+          "Sultan Mosque was gazetted as a national monument in 1975. It is an active place of worship: dress modestly and check visiting times before you go inside.",
+        ],
+      },
+      zh: {
+        lang: "zh",
+        title: "众人之手建成的清真寺",
+        status: "draft-translation",
+        reviewNote: DRAFT_NOTE,
+        paragraphs: [
+          "1824年，柔佛苏丹胡先沙（Sultan Hussein Shah）与英国东印度公司签订协议，把新加坡割让给英国作为贸易港。英方同意每年向苏丹及其后代支付俸金，并承认甘榜格南为王室产业。苏丹王宫——甘榜格南皇宫——旁的一块地，被划作兴建王室清真寺之用。",
+          "莱佛士承诺从东印度公司拨出3000西班牙银元作为建寺经费。最初的清真寺是一座朴素的单层砖砌建筑，有着两层的斜屋顶。",
+          "一个世纪后，旧清真寺亟需大修。1924年，理事们批准在原址兴建一座更大的清真寺，并委托斯旺与麦克拉伦公司（Swan & Maclaren）的爱尔兰建筑师丹尼斯·桑特里（Denis Santry）设计。他以印度—撒拉逊风格融合了印度、伊斯兰和欧洲的元素。1926年至1927年全球经济不景气，筹款一度停滞；1928年工程动工，新清真寺于1932年落成。",
+          "仔细看看每座金色圆顶的底部。那一圈深色的带子是由玻璃瓶组成的——由社群中较贫穷的人捐献，作为他们对建寺的一份贡献。",
+          "礼拜大厅可容纳多达5000名信徒。每年斋月的开始都在这里宣布；斋月期间，清真寺周围的街道会变成热闹的市集。",
+          "苏丹回教堂于1975年被列为国家古迹。它至今仍是活跃的礼拜场所：请穿着端庄，入内参观前先查看开放时间。",
+        ],
+      },
+      ms: {
+        lang: "ms",
+        title: "Masjid yang dibina oleh banyak tangan",
+        status: "draft-translation",
+        reviewNote: DRAFT_NOTE,
+        paragraphs: [
+          "Pada tahun 1824, Sultan Hussein Shah dari Johor menandatangani perjanjian dengan Syarikat Hindia Timur Inggeris yang menyerahkan Singapura kepada British sebagai pelabuhan perdagangan. British bersetuju membayar elaun tahunan kepada Sultan dan keturunannya serta mengiktiraf Kampong Glam sebagai milik keluarga diraja. Tanah di sebelah istana Sultan, Istana Kampong Glam, diperuntukkan untuk sebuah masjid diraja.",
+          "Stamford Raffles menjanjikan 3,000 dolar Sepanyol daripada Syarikat itu untuk pembinaannya. Masjid pertama ialah sebuah bangunan bata satu tingkat yang sederhana dengan bumbung condong dua tingkat.",
+          "Seabad kemudian, masjid itu memerlukan pembaikan besar, dan pada tahun 1924 para pemegang amanah meluluskan pembinaan masjid yang lebih besar di tapak yang sama. Mereka melantik arkitek Ireland Denis Santry dari firma Swan & Maclaren, yang menggabungkan unsur India, Islam dan Eropah dalam gaya Indo-Saracenic. Kutipan dana terhenti semasa kemelesetan ekonomi dunia pada tahun 1926 dan 1927; kerja pembinaan bermula pada tahun 1928, dan masjid baharu siap pada tahun 1932.",
+          "Perhatikan bahagian bawah setiap kubah emas. Jalur gelap itu diperbuat daripada botol kaca yang didermakan oleh anggota masyarakat yang kurang berkemampuan sebagai sumbangan mereka kepada pembinaan masjid.",
+          "Dewan solatnya boleh memuatkan sehingga 5,000 jemaah. Setiap tahun, permulaan Ramadan diumumkan di sini, dan jalan-jalan di sekitar masjid menjadi bazar sepanjang bulan puasa.",
+          "Masjid Sultan diwartakan sebagai monumen negara pada tahun 1975. Ia masih menjadi tempat ibadat yang aktif: berpakaianlah dengan sopan dan semak waktu lawatan sebelum masuk.",
+        ],
+      },
+    },
+  },
+  ambient: [
+    {
+      id: "sm-kampong-morning",
+      title: "Kampong morning",
+      description: "Birdsong, a breeze through palms and a distant bicycle bell: an illustrative mood for a quiet morning street.",
+      recipe: "kampong-morning",
+    },
+  ],
+  game: {
+    id: "sm-guess-the-year",
+    type: "guess-the-year",
+    title: "Guess the Year",
+    intro: "Three pictures of the mosque, decades apart. Read the street for clues, then pick a year.",
+    range: [1860, 2030],
+    rounds: [
+      {
+        id: "sm-r1",
+        image: game1930,
+        prompt: "A postcard captioned 'Malay Mosque, Singapore'. When was it photographed?",
+        accept: [1928, 1935],
+        answerLabel: "c. 1930",
+        clues: [
+          { label: "The mosque itself", detail: "This domed building was only begun in 1928 and finished in 1932, so the picture cannot be older than that." },
+        ],
+        explanation: "Leiden University Libraries (KITLV 104793) date the postcard to about 1930. Because building only began in 1928, we accept 1928 to 1935.",
+      },
+      {
+        id: "sm-r2",
+        image: game1935,
+        prompt: "Another postcard, captioned 'Moslem Mosque Singapore'. Which years fit?",
+        accept: [1935, 1960],
+        answerLabel: "Between 1935 and 1960",
+        clues: [{ label: "A finished building", detail: "The mosque is complete, so the photograph is later than 1932." }],
+        explanation: "The archive dates this postcard to between 1935 and 1960, so any year in that window is spot on.",
+      },
+      {
+        id: "sm-r3",
+        image: y1973,
+        prompt: "A colour photograph of the front of the mosque. When?",
+        accept: [1973, 1974],
+        answerLabel: "1973 or 1974",
+        clues: [
+          { label: "Colour film", detail: "Colour snapshots like this are rare before the mid-twentieth century." },
+          { label: "Motor cars", detail: "Cars, not rickshaws or trishaws, fill the road." },
+        ],
+        explanation: "The photographer, Rainer Halama, dates his picture to 1973/74, a year or two before the mosque became a national monument.",
+      },
+    ],
+  },
+  stamp: {
+    id: "stamp-sultan-mosque",
+    art: "/assets/stamps/sultan-mosque.svg",
+    inkArt: "/assets/stamps/sultan-mosque-ink.svg",
+    ink: "#3C4931",
+    alt: "Postage-style stamp illustrating Sultan Mosque's golden onion dome, minarets and railings, labelled Sultan Mosque, مسجد سلطان, Kampong Glam.",
+    dateBand: { x: 0.233, y: 0.868, w: 0.533, h: 0.053 },
+  },
+  nextSiteId: "thian-hock-keng",
+  sourceIds: ["roots-sultan", "infopedia-sultan", "roots-sultan-collection"],
+  published: true,
+};

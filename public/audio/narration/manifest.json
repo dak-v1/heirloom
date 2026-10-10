@@ -1,0 +1,4 @@
+{
+  "note": "Prepared narration files. Empty until scripts/generate-narration.mjs runs with ELEVENLABS_API_KEY set. Without entries, the app uses the device's own text-to-speech voice and labels it as such.",
+  "entries": []
+}
