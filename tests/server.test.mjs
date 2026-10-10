@@ -112,3 +112,54 @@ describe("memories API", () => {
     expect(q.status).toBe(200);
   });
 });
+
+describe("memory rate limits", () => {
+  let srv;
+  let url;
+  beforeAll(async () => {
+    // Small limits so the test is quick: 2 per guest, 5 per IP backstop.
+    const { app } = createApp({ dbFile: ":memory:", adminToken: ADMIN, guestSecret: "secret", submitLimit: { limit: 2, windowMs: 60_000 }, ipSubmitLimit: { limit: 5, windowMs: 60_000 } });
+    await new Promise((resolve) => {
+      srv = app.listen(0, resolve);
+    });
+    url = `http://127.0.0.1:${srv.address().port}`;
+  });
+  afterAll(() => srv?.close());
+
+  const submit = (token) =>
+    fetch(`${url}/api/memories`, { method: "POST", headers: { "content-type": "application/json", "x-heirloom-guest": token }, body: JSON.stringify({ siteId: "sultan-mosque", type: "note", text: "Hello" }) });
+  const newGuest = async () => (await (await fetch(`${url}/api/guest`, { method: "POST" })).json()).token;
+
+  it("limits each guest separately, so visitors sharing one Wi-Fi can all submit", async () => {
+    const a = await newGuest();
+    const b = await newGuest();
+    expect((await submit(a)).status).toBe(201);
+    expect((await submit(a)).status).toBe(201);
+    expect((await submit(a)).status).toBe(429);
+    expect((await submit(b)).status).toBe(201);
+    expect((await submit(b)).status).toBe(201);
+  });
+
+  it("still applies a per-IP backstop", async () => {
+    // 4 accepted so far from this IP; one more fits, then the backstop applies.
+    expect((await submit(await newGuest())).status).toBe(201);
+    expect((await submit(await newGuest())).status).toBe(429);
+  });
+
+  it("counts one report per guest per memory", async () => {
+    const { app } = createApp({ dbFile: ":memory:", adminToken: ADMIN, guestSecret: "secret" });
+    const s2 = await new Promise((resolve) => {
+      const s = app.listen(0, () => resolve(s));
+    });
+    const u = `http://127.0.0.1:${s2.address().port}`;
+    const g = async () => (await (await fetch(`${u}/api/guest`, { method: "POST" })).json()).token;
+    const tok = await g();
+    const { id } = await (await fetch(`${u}/api/memories`, { method: "POST", headers: { "content-type": "application/json", "x-heirloom-guest": tok }, body: JSON.stringify({ siteId: "sultan-mosque", type: "note", text: "Hi" }) })).json();
+    await fetch(`${u}/api/admin/memories/${id}/approve`, { method: "POST", headers: { authorization: `Bearer ${ADMIN}` } });
+    const reporter = await g();
+    for (let i = 0; i < 3; i++) await fetch(`${u}/api/memories/${id}/report`, { method: "POST", headers: { "x-heirloom-guest": reporter } });
+    const wall = await (await fetch(`${u}/api/sites/sultan-mosque/memories`)).json();
+    expect(wall.memories.find((m) => m.id === id)).toBeDefined();
+    s2.close();
+  });
+});

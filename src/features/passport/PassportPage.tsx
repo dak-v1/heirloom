@@ -1,8 +1,9 @@
-import { Suspense, lazy, useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
-import { ArrowRight, BookOpen, BookOpenCheck, Hand, Info, Stamp } from "lucide-react";
+import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router";
+import { ArrowRight, BookOpen, BookOpenCheck, Hand, Info, Stamp, X } from "lucide-react";
 import { SITES, findSite } from "../../content/sites";
 import { BADGES } from "../../content/badges";
+import { STAMPABLE_PAGE_IDS } from "../../content/passport";
 import type { EarnedStamp } from "../../services/progress";
 import { Button, ButtonLink } from "../../components/Button";
 import { Sheet } from "../../components/Sheet";
@@ -10,29 +11,79 @@ import { StampArt, Tag } from "../../components/Media";
 import { progress, useProgress } from "../../state/progress";
 import { useReducedMotion } from "../../state/preferences";
 import { formatVisitDate } from "../completion/Completion";
+import { PassportBook } from "./PassportBook";
 import "./passport.css";
 
 const Passport3D = lazy(() => import("./Passport3D"));
+
+/** How long the 3D cover's "Open" clip runs before the flat book takes over. */
+const COVER_OPEN_MS = 1100;
 
 export function PassportPage() {
   const p = useProgress();
   const reduced = useReducedMotion();
   const [params, setParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [viewer, setViewer] = useState<"loading" | "ready" | "fallback">("loading");
   const [fallbackReason, setFallbackReason] = useState<string | null>(null);
   const [detail, setDetail] = useState<EarnedStamp | null>(null);
+  const openTimer = useRef<number | undefined>(undefined);
+  const bookRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     document.title = "My Heritage Passport · Heirloom";
+    return () => window.clearTimeout(openTimer.current);
   }, []);
 
   const placeId = params.get("place");
   const toPlace = p.earnedStamps.find((s) => s.id === placeId);
+  const inBook = params.get("book") === "1" || !!toPlace;
+  const currentPageId = p.passport.currentPageId ?? "cover";
   const isPlaced = (s: EarnedStamp) => p.placements.some((pl) => pl.earnedStampId === s.id);
   const explored = SITES.filter((s) => p.visits[s.id]?.completedAt).length;
   const unplaced = p.earnedStamps.filter((s) => !isPlaced(s));
   const firstUnvisited = SITES.find((s) => !p.earnedStamps.some((e) => e.siteId === s.id));
+
+  // Arriving with a stamp to place: start on a stampable page, not the cover.
+  useEffect(() => {
+    if (toPlace && !STAMPABLE_PAGE_IDS.includes(progress.getVisitorProgress().passport.currentPageId ?? "")) {
+      progress.setCurrentPassportPage(STAMPABLE_PAGE_IDS[0]);
+    }
+  }, [toPlace]);
+
+  // Move focus into the book when it opens, so keyboard and screen-reader users land on it.
+  // (Delayed so it wins over a closing sheet handing focus back to its opener.)
+  useEffect(() => {
+    if (!inBook) return;
+    const t = window.setTimeout(() => bookRef.current?.focus(), 60);
+    return () => window.clearTimeout(t);
+  }, [inBook]);
+
+  /** The book lives in the URL (?book=1) so browser Back returns to the cover. */
+  const enterBook = (stampId?: string) => {
+    window.clearTimeout(openTimer.current);
+    setOpen(false);
+    const next = new URLSearchParams({ book: "1" });
+    if (stampId) next.set("place", stampId);
+    setParams(next, { state: { overlay: true } });
+  };
+  const leaveBook = () => {
+    if ((location.state as { overlay?: boolean } | null)?.overlay) navigate(-1);
+    else setParams({}, { replace: true });
+  };
+  const openPassport = () => {
+    if (reduced || viewer !== "ready") return enterBook();
+    setOpen(true);
+    openTimer.current = window.setTimeout(() => enterBook(), COVER_OPEN_MS);
+  };
+  const cancelPlacing = () => {
+    const next = new URLSearchParams(params);
+    next.delete("place");
+    next.set("book", "1");
+    setParams(next, { replace: true, state: location.state });
+  };
 
   return (
     <div className="page passport">
@@ -58,21 +109,39 @@ export function PassportPage() {
         </dl>
       </header>
 
-      {toPlace && (
-        <section className="place-notice card card--tape" aria-labelledby="place-h">
-          <StampArt src={findSite(toPlace.siteId)?.stamp.art ?? ""} alt="" tilt={-5} className="place-notice__stamp" />
-          <div>
-            <h2 id="place-h">{findSite(toPlace.siteId)?.name} stamp is ready</h2>
-            <p>
-              <Tag tone="demo">Next build</Tag> Choosing a page and pressing the stamp exactly where you like arrives in the next stage of the build. Your stamp is saved and waiting in the tray below, so nothing is lost.
-            </p>
-            <Button variant="secondary" size="sm" onClick={() => setParams({}, { replace: true })}>
-              Got it
+      {inBook ? (
+        <section className="passport-book" aria-labelledby="book-h" ref={bookRef} tabIndex={-1}>
+          <div className="passport-book__head">
+            <h2 id="book-h">Your passport</h2>
+            <Button variant="secondary" size="sm" icon={<BookOpen size={16} />} onClick={leaveBook}>
+              Close passport
             </Button>
           </div>
+          {toPlace && (
+            <div className="placing card card--flat" role="status">
+              <StampArt src={findSite(toPlace.siteId)?.stamp.art ?? ""} alt="" tilt={-5} className="placing__stamp" />
+              <div className="placing__text">
+                <strong>Selected: {findSite(toPlace.siteId)?.name} stamp</strong>
+                <span className="muted">
+                  Flip to the page you'd like. <Tag tone="demo">In progress</Tag> Pressing the stamp onto the exact spot is being built next; your stamp stays safe in the tray.
+                </span>
+              </div>
+              <Button variant="ghost" size="sm" icon={<X size={16} />} onClick={cancelPlacing}>
+                Cancel
+              </Button>
+            </div>
+          )}
+          <PassportBook
+            currentPageId={currentPageId}
+            onPageChange={(id) => progress.setCurrentPassportPage(id)}
+            reducedMotion={reduced}
+            identity={{ issuedAt: p.createdAt, guestId: p.guestId, stampsEarned: p.earnedStamps.length }}
+          />
+          <p className="muted passport-book__hint">
+            <Hand size={14} aria-hidden="true" /> Swipe, use the arrows, or press ← → to turn pages.
+          </p>
         </section>
-      )}
-
+      ) : (
       <section className="passport3d card" aria-labelledby="book-h">
         <h2 id="book-h" className="visually-hidden">
           Your passport
@@ -83,7 +152,7 @@ export function PassportPage() {
               <Passport3D
                 open={open}
                 reducedMotion={reduced}
-                onTap={() => setOpen((o) => !o)}
+                onTap={openPassport}
                 onReady={() => setViewer("ready")}
                 onError={(r) => {
                   setFallbackReason(r);
@@ -100,23 +169,18 @@ export function PassportPage() {
           )}
         </div>
         <div className="passport3d__controls">
-          <Button variant={open ? "secondary" : "primary"} icon={open ? <BookOpen size={18} /> : <BookOpenCheck size={18} />} onClick={() => setOpen((o) => !o)} aria-pressed={open}>
-            {open ? "Close passport" : "Open passport"}
+          <Button icon={<BookOpenCheck size={18} />} onClick={openPassport} disabled={open}>
+            {open ? "Opening…" : "Open passport"}
           </Button>
           {viewer === "ready" && (
             <span className="muted passport3d__hint">
-              <Hand size={14} aria-hidden="true" /> Drag to turn it, tap to {open ? "close" : "open"}
+              <Hand size={14} aria-hidden="true" /> Drag to turn it, tap to open
             </span>
           )}
         </div>
         {viewer === "fallback" && <p className="muted passport3d__hint">{fallbackReason} Showing the cover instead.</p>}
-        <p className="notice passport3d__dev">
-          <Info size={16} aria-hidden="true" />
-          <span>
-            <strong>Coming in the next build:</strong> flip through the stamp pages and press each stamp wherever you like. The pages, placement rules and storage are already set up.
-          </span>
-        </p>
       </section>
+      )}
 
       <section className="section" aria-labelledby="tray-h">
         <div className="section-head">
@@ -148,7 +212,7 @@ export function PassportPage() {
                     <StampArt src={site.stamp.art} alt={site.stamp.alt} tilt={[-3, 2, -1][i % 3]} />
                     <span className="tray__name">{site.name}</span>
                     <span className="tray__date">{formatVisitDate(s.visitDate)}</span>
-                    <Tag tone={isPlaced(s) ? "olive" : "mustard"}>{isPlaced(s) ? "Placed" : "Waiting to be placed"}</Tag>
+                    <Tag tone={isPlaced(s) ? "olive" : "mustard"}>{isPlaced(s) ? "Placed" : "Not placed yet"}</Tag>
                   </button>
                 </li>
               );
@@ -205,12 +269,19 @@ export function PassportPage() {
             <p>
               Visited <strong>{formatVisitDate(detail.visitDate)}</strong>. {isPlaced(detail) ? "Placed in your passport." : "Waiting to be placed."}
             </p>
-            <Button block disabled aria-describedby="place-soon">
-              Place in passport
-            </Button>
-            <p id="place-soon" className="muted" style={{ fontSize: "var(--text-sm)" }}>
-              Free placement on the passport pages arrives in the next build.
-            </p>
+            {!isPlaced(detail) && (
+              <Button
+                block
+                icon={<Stamp size={18} />}
+                onClick={() => {
+                  const id = detail.id;
+                  setDetail(null);
+                  enterBook(id);
+                }}
+              >
+                Place in passport
+              </Button>
+            )}
             <ButtonLink to={`/site/${findSite(detail.siteId)?.slug}`} variant="ghost" block>
               Revisit {findSite(detail.siteId)?.name}
             </ButtonLink>
