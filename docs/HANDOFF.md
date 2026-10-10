@@ -34,7 +34,7 @@ Optional `.env` (see `.env.example`): `HEIRLOOM_ADMIN_TOKEN` enables moderation 
 3. **See the past** → *Past View*. Switch eras on the timeline (c. 1890, 1930–60, Today). Tap numbered hotspots; *All details* lists them as text. The ⓘ button shows credits, licence and date basis.
 4. **Listen**: mini-player or step 2. Narration uses the device voice (labelled). Open the transcript; switch to 中文 / Melayu (draft labels); Tamil shows as not yet available.
 5. **Play** (optional): *Guess the Year*, 3 rounds, or *Skip for now*.
-6. **Leave a memory** (optional): currently an explained "next build" state with *Continue without sharing*.
+6. **Leave a memory** (optional): note or drawing → "waiting for review"; or *Continue without sharing*. Approve it at `/admin` (see §5) and it appears on that site's wall.
 7. **Finish**: *I've finished exploring* → stamp reward → *Stamp my passport* (opens `/passport?place=<earnedStampId>`) or *Place later* (toast; stamp waits in the tray).
 8. Refresh: progress, badges and the earned stamp persist; finishing again shows "Already in your passport" (no duplicate).
 9. **Next on the trail** card → next site, directions or map.
@@ -74,7 +74,7 @@ Global: `ArrivalSheet` (location suggestions), badge toasts, More menu (preferen
 | `earnStamp(siteId)` | ✅ idempotent, unit-tested | `progress.earnStamp(siteId, stampDesignId)` → `{ stamp, isNew, newBadges }` |
 | `getPassportPlacements()` | ✅ storage only (returns `[]` until Stage 2 places stamps) | `progress.getPassportPlacements()` |
 | `saveStampPlacement(earnedStampId, placement)` | ✅ storage + validation, unit-tested; **no UI yet** | `progress.saveStampPlacement(id, { pageId, x, y, widthRatio, rotationDeg, zIndex? })`, `progress.removeStampPlacement(id)` for undo |
-| `submitMemory(siteId, draft)` | ✅ client + server, API-tested; **no UI yet** | `src/services/memories.ts` → `POST /api/memories` |
+| `submitMemory(siteId, draft)` | ✅ client + server + composer UI (`src/features/memories/`) | `src/services/memories.ts` → `POST /api/memories` |
 | `getApprovedMemories(siteId)` | ✅ client + server | `GET /api/sites/:siteId/memories` (approved only) |
 
 Also available: `progress.getUnplacedStamps()`, `hasEarned()`, `recordHotspotOpened/LanguageUsed/NarrationCompleted/GameResult`, `setCurrentPassportPage()`, `onBadges(listener)`, `resetProgress()`; and `clampPlacement()` (keeps a rotated stamp inside the page).
@@ -87,11 +87,43 @@ Also available: `progress.getUnplacedStamps()`, `hasEarned()`, `recordHotspotOpe
 - One placement per earned stamp: saving again **moves** it (same placement ID). New placements go on top (`zIndex`).
 
 ### Memories API (server/app.mjs) — rules already enforced server-side
-- `POST /api/memories` (header `x-heirloom-guest: <token>`): `{ siteId, type: "note"|"drawing", text?, drawing? (PNG data URL), displayName? }` → always `pending`. Limits: note ≤ 500 chars, name ≤ 40, PNG ≤ 350 KB and ≤ 1200 px per side, 5 submissions / 10 min per guest and per IP. Text is stored plain and must be **rendered as text**.
+- `POST /api/memories` (header `x-heirloom-guest: <token>`): `{ siteId, type: "note"|"drawing", text?, drawing? (PNG data URL), displayName? }` → always `pending`. Limits: note ≤ 500 chars, name ≤ 40, PNG ≤ 350 KB and ≤ 1200 px per side, 5 submissions / 10 min per guest, with a generous per-IP backstop (120 / 10 min) so a room on one Wi-Fi can still submit. Text is stored plain and must be **rendered as text**.
 - `GET /api/sites/:siteId/memories` → approved only. `GET /api/me/memories` → the guest's own items with status (no moderation reason).
 - `GET /api/memories/:id/drawing.png` → only when approved (or with the moderator token).
 - `POST /api/memories/:id/report` → hides an approved memory after 3 reports.
 - Moderation (`Authorization: Bearer $HEIRLOOM_ADMIN_TOKEN`): `GET /api/admin/memories?status=pending`, `POST /api/admin/memories/:id/approve|reject|hide` (`{ reason? }`). Without the env var these return 503.
+- Sample memories: 2 per site, approved and labelled (`is_sample = 1`, "Sample visitor"), seeded at API start with fixed IDs (`seedSampleMemories` in `server/db.mjs`), so restarts never duplicate them.
+
+### Moderating memories
+
+**In the browser:** open `/admin` (not linked from any menu), paste the value of `HEIRLOOM_ADMIN_TOKEN`, then Approve / Reject / Hide. The token is kept only in that tab's session storage and is never shown. To copy it without printing it (PowerShell, repo root):
+
+```powershell
+(Select-String -Path .env -Pattern '^HEIRLOOM_ADMIN_TOKEN=').Line.Split('=',2)[1] | Set-Clipboard
+```
+
+**From a terminal** (API on :8787; the token is read from `.env` and never echoed):
+
+```bash
+TOKEN=$(grep '^HEIRLOOM_ADMIN_TOKEN=' .env | cut -d= -f2-)
+API=http://localhost:8787/api/admin/memories
+curl -s -H "Authorization: Bearer $TOKEN" "$API?status=pending"          # list pending (also approved|rejected|hidden)
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "content-type: application/json" -d '{}' "$API/<id>/approve"
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "content-type: application/json" -d '{"reason":"off-topic"}' "$API/<id>/reject"
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "content-type: application/json" -d '{}' "$API/<id>/hide"
+curl -s -H "Authorization: Bearer $TOKEN" -o drawing.png "http://localhost:8787/api/memories/<id>/drawing.png"   # preview a pending drawing
+```
+
+PowerShell equivalent:
+
+```powershell
+$t = (Select-String -Path .env -Pattern '^HEIRLOOM_ADMIN_TOKEN=').Line.Split('=',2)[1]
+$h = @{ Authorization = "Bearer $t" }
+Invoke-RestMethod -Headers $h "http://localhost:8787/api/admin/memories?status=pending"
+Invoke-RestMethod -Method Post -Headers $h -ContentType application/json -Body '{}' "http://localhost:8787/api/admin/memories/<id>/approve"
+```
+
+`401` = wrong token; `503` = `HEIRLOOM_ADMIN_TOKEN` not set (restart the API after editing `.env`). Moderation reasons are stored but never returned to visitors.
 - Storage: SQLite (`node:sqlite`) at `HEIRLOOM_DB_FILE`. Needs a persistent disk in production.
 
 ## 6. Connection points for Stage 2
@@ -99,7 +131,7 @@ Also available: `progress.getUnplacedStamps()`, `hasEarned()`, `recordHotspotOpe
 - **Finish → earn**: `SitePage.finish()` calls `progress.earnStamp(site.id, site.stamp.id)` and shows `StampReward` (`src/features/completion/Completion.tsx`). Insert the optional memory step *before* this; do not gate earning on it.
 - **"Stamp my passport"** navigates to `/passport?place=<earnedStampId>`. Replace the notice in `PassportPage.tsx` with the real placement flow (select page → ghost preview → tap/drag/rotate → *Stamp here* → animation → `saveStampPlacement`).
 - **"Place later"** already works: the stamp stays in `progress.getUnplacedStamps()` (the tray).
-- **Memory step**: replace the "next build" sheet in `SitePage.tsx` (`sheet === "memory"`) with the composer; call `submitMemory()`; award the `memory-keeper` badge (art ready; it's marked `comingSoon` in `badges.ts`, remove that flag).
+- **Memory step** (done in Stage 2): `MemoryComposer` in the `sheet === "memory"` sheet, `MemoryWall` on the site page; `progress.recordMemorySubmitted()` awards `memory-keeper`. `finish()` is untouched.
 - **Analytics** (local only): `track("stamp_placed" | "memory_submitted", …)` in `src/services/analytics.ts`.
 
 ## 7. Assets ready for Stage 2

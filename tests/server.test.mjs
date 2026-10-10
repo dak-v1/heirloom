@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApp } from "../server/app.mjs";
-import { SITE_IDS } from "../server/validation.mjs";
+import { LIMITS, SITE_IDS } from "../server/validation.mjs";
+import { DRAWING_MAX_BYTES, DRAWING_MAX_SIDE, NAME_MAX, NOTE_MAX } from "../src/features/memories/validation.ts";
 import { SITES } from "../src/content/sites/index.ts";
 import { deflateSync } from "node:zlib";
 
@@ -56,6 +57,15 @@ describe("memories API", () => {
     expect([...SITE_IDS].sort()).toEqual(SITES.map((s) => s.id).sort());
   });
 
+  it("keeps the composer's limits in sync with the server's", () => {
+    expect({ NOTE_MAX, NAME_MAX, DRAWING_MAX_BYTES, DRAWING_MAX_SIDE }).toEqual({
+      NOTE_MAX: LIMITS.noteChars,
+      NAME_MAX: LIMITS.nameChars,
+      DRAWING_MAX_BYTES: LIMITS.drawingBytes,
+      DRAWING_MAX_SIDE: LIMITS.drawingMaxSide,
+    });
+  });
+
   it("requires a valid guest token to submit", async () => {
     const r = await post("/api/memories", { siteId: "sultan-mosque", type: "note", text: "Hello" }, { "x-heirloom-guest": "g_00000000-0000-0000-0000-000000000000.forged" });
     expect(r.status).toBe(401);
@@ -104,6 +114,15 @@ describe("memories API", () => {
     const img = await fetch(`${base}/api/memories/${id}/drawing.png`);
     expect(img.status).toBe(200);
     expect(img.headers.get("content-type")).toBe("image/png");
+  });
+
+  it("seeds labelled sample memories, each only on its own site's wall", async () => {
+    for (const siteId of SITE_IDS) {
+      const wall = await (await fetch(`${base}/api/sites/${siteId}/memories`)).json();
+      const samples = wall.memories.filter((m) => m.isSample);
+      expect(samples.length).toBeGreaterThanOrEqual(2);
+      expect(samples.every((m) => m.siteId === siteId && m.displayName === "Sample visitor" && m.text.startsWith("Sample note:"))).toBe(true);
+    }
   });
 
   it("lists the moderation queue only for moderators", async () => {

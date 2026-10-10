@@ -84,6 +84,15 @@ describe("badges", () => {
     svc.recordNarrationCompleted("x");
     expect(seen).toEqual([["good-listener"]]);
   });
+
+  it("awards Memory Keeper once for a submitted memory, without touching stamps", () => {
+    const { svc } = setup();
+    expect(svc.recordMemorySubmitted("sultan-mosque")).toEqual(["memory-keeper"]);
+    expect(svc.recordMemorySubmitted("thian-hock-keng")).toEqual([]);
+    const p = svc.getVisitorProgress();
+    expect(p.visits["sultan-mosque"].memorySubmitted).toBe(true);
+    expect(p.earnedStamps).toHaveLength(0);
+  });
 });
 
 describe("placements (storage contract for the Stage 2 passport)", () => {

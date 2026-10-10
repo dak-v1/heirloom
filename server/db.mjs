@@ -34,6 +34,35 @@ export function openDatabase(file) {
   return db;
 }
 
+// Demo contributions, clearly labelled as samples in the app (is_sample = 1). The wording is
+// deliberately personal and generic: no dates, names or historical claims.
+const SAMPLE_MEMORIES = {
+  "thian-hock-keng": [
+    "Sample note: the lane outside was full of office lunch crowds, but the courtyard felt like a pause button.",
+    "Sample note: I stood under the roof for a long time just looking at the colours and the carved details.",
+  ],
+  "sri-mariamman-temple": [
+    "Sample note: I took my shoes off at the entrance and the stone floor was cool after the hot walk.",
+    "Sample note: there was so much to look at on the tower that I kept finding new figures each time I looked up.",
+  ],
+  "sultan-mosque": [
+    "Sample note: the golden dome caught the late afternoon light while we walked down from the street.",
+    "Sample note: we shared a drink at a nearby shop afterwards and talked about the places our families come from.",
+  ],
+};
+
+/** Insert the sample memories once (fixed IDs, so restarts never duplicate them). */
+export function seedSampleMemories(db, now = () => new Date()) {
+  const insert = db.prepare(
+    `INSERT OR IGNORE INTO memories (id, site_id, guest_id, type, text, display_name, is_sample, status, created_at, updated_at)
+     VALUES (?, ?, 'sample', 'note', ?, 'Sample visitor', 1, 'approved', ?, ?)`,
+  );
+  const at = now().toISOString();
+  for (const [siteId, notes] of Object.entries(SAMPLE_MEMORIES)) {
+    notes.forEach((text, i) => insert.run(`sample_${siteId}_${i + 1}`, siteId, text, at, at));
+  }
+}
+
 const PUBLIC_COLUMNS = "id, site_id, type, text, display_name, is_sample, created_at, CASE WHEN drawing IS NULL THEN 0 ELSE 1 END AS has_drawing";
 
 function toPublic(row) {

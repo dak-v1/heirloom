@@ -18,6 +18,8 @@ import { StoryPlayer, TranscriptSheet } from "../audio/StoryPlayer";
 import { GuessTheYear, initialGameState, type GameState } from "../game/GuessTheYear";
 import { NextSiteCard, StampReward, formatVisitDate } from "../completion/Completion";
 import { useGeo } from "../location/geo-context";
+import { MemoryComposer } from "../memories/MemoryComposer";
+import { MemoryWall } from "../memories/MemoryWall";
 import { DetailsListSheet, HotspotSheet, SourcesSheet } from "./InfoSheets";
 import { hotspotKey } from "./ImageStage";
 import { PastView } from "./PastView";
@@ -76,6 +78,9 @@ function SiteExperience({ site }: { site: Site }) {
   const [game, setGame] = useState<GameState>(() => initialGameState(site.game));
   const [skippedGame, setSkippedGame] = useState(false);
   const [skippedMemory, setSkippedMemory] = useState(false);
+  const [memorySent, setMemorySent] = useState(false);
+  const [memoryBusy, setMemoryBusy] = useState(false);
+  const [wallKey, setWallKey] = useState(0);
   const [readTranscript, setReadTranscript] = useState(false);
   const [reward, setReward] = useState<EarnResult | null>(null);
 
@@ -271,13 +276,13 @@ function SiteExperience({ site }: { site: Site }) {
             </div>
           </Step>
 
-          <Step n={5} done={skippedMemory} optional title="Leave a memory" icon={<MessageSquareHeart size={20} />}>
+          <Step n={5} done={skippedMemory || memorySent || !!visit?.memorySubmitted} optional title="Leave a memory" icon={<MessageSquareHeart size={20} />}>
             <p>Pin a note or drawing to this place for future visitors.</p>
             <div className="step-actions">
               <Button variant="secondary" onClick={() => setSheet("memory")} icon={<MessageSquareHeart size={18} />}>
                 Leave a memory
               </Button>
-              {!skippedMemory && (
+              {!skippedMemory && !memorySent && (
                 <Button variant="ghost" onClick={() => setSkippedMemory(true)}>
                   Continue without sharing
                 </Button>
@@ -299,6 +304,8 @@ function SiteExperience({ site }: { site: Site }) {
           <Info size={18} aria-hidden="true" />
           <span>{site.visitNote}</span>
         </p>
+
+        <MemoryWall site={site} refreshKey={wallKey} onLeave={() => setSheet("memory")} />
 
         <NextSiteCard site={site} />
       </div>
@@ -329,25 +336,36 @@ function SiteExperience({ site }: { site: Site }) {
         open={sheet === "memory"}
         onClose={() => setSheet(null)}
         title="Leave a memory"
+        size="tall"
+        locked={memoryBusy}
         footer={
-          <Button
-            block
-            onClick={() => {
-              setSkippedMemory(true);
-              setSheet(null);
-            }}
-          >
-            Continue without sharing
-          </Button>
+          !memorySent && (
+            <Button
+              block
+              variant="secondary"
+              disabled={memoryBusy}
+              onClick={() => {
+                setSkippedMemory(true);
+                setSheet(null);
+              }}
+            >
+              Continue without sharing
+            </Button>
+          )
         }
       >
-        <p className="notice notice--demo">
-          <Tag tone="demo">Next build</Tag>
-          <span>
-            Writing notes and drawings, and the shared memory wall, arrive in the next stage of the build. The secure storage and moderation rules behind them are ready. You can finish your visit without sharing.
-          </span>
-        </p>
-        <p style={{ marginTop: 12 }}>When it launches, new memories will be reviewed by a moderator before anyone else can see them.</p>
+        <MemoryComposer
+          site={site}
+          onBusyChange={setMemoryBusy}
+          onSubmitted={() => {
+            setMemorySent(true);
+            setWallKey((k) => k + 1);
+          }}
+          onBack={() => {
+            setSheet(null);
+            setMemorySent(false);
+          }}
+        />
       </Sheet>
 
       <TranscriptSheet open={sheet === "transcript"} onClose={() => setSheet(null)} site={site} story={story} />

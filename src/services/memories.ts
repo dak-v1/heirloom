@@ -91,6 +91,15 @@ export async function getApprovedMemories(siteId: string): Promise<PublicMemory[
   return (await call<{ memories: PublicMemory[] }>(`/api/sites/${encodeURIComponent(siteId)}/memories`)).memories;
 }
 
+/** True once this browser has a guest identity (i.e. it may have submissions of its own). */
+export function hasGuestToken() {
+  try {
+    return !!localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return false;
+  }
+}
+
 /** This guest's own submissions with their moderation status. */
 export async function getMyMemories(): Promise<OwnMemory[]> {
   return (await call<{ memories: OwnMemory[] }>("/api/me/memories", {}, true)).memories;
@@ -98,4 +107,38 @@ export async function getMyMemories(): Promise<OwnMemory[]> {
 
 export function reportMemory(memoryId: string) {
   return call<{ ok: true }>(`/api/memories/${encodeURIComponent(memoryId)}/report`, { method: "POST" }, true);
+}
+
+/* ---------- moderation (/admin). The token is passed per call and never logged or stored here. ---------- */
+
+export type ModerationStatus = OwnMemory["status"];
+
+export interface ModerationItem extends OwnMemory {
+  reportCount: number;
+}
+
+const adminHeaders = (token: string) => ({ authorization: `Bearer ${token}` });
+
+export async function adminListMemories(token: string, status: ModerationStatus = "pending"): Promise<ModerationItem[]> {
+  return (await call<{ memories: ModerationItem[] }>(`/api/admin/memories?status=${status}`, { headers: adminHeaders(token) })).memories;
+}
+
+export function adminModerate(token: string, memoryId: string, action: "approve" | "reject" | "hide") {
+  return call<{ id: string; status: ModerationStatus }>(`/api/admin/memories/${encodeURIComponent(memoryId)}/${action}`, {
+    method: "POST",
+    headers: adminHeaders(token),
+    body: "{}",
+  });
+}
+
+/** Drawings that aren't approved yet need the moderator token, which an <img> can't send: fetch and return an object URL. */
+export async function adminDrawingUrl(token: string, memoryId: string): Promise<string> {
+  let r: Response;
+  try {
+    r = await fetch(`/api/memories/${encodeURIComponent(memoryId)}/drawing.png`, { headers: adminHeaders(token) });
+  } catch {
+    throw new MemoryApiError("You appear to be offline.", 0);
+  }
+  if (!r.ok) throw new MemoryApiError("Drawing unavailable.", r.status);
+  return URL.createObjectURL(await r.blob());
 }

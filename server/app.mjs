@@ -4,7 +4,7 @@ import express from "express";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { createMemoryRepo, MEMORY_STATUSES, openDatabase } from "./db.mjs";
+import { createMemoryRepo, MEMORY_STATUSES, openDatabase, seedSampleMemories } from "./db.mjs";
 import { ValidationError, validateSubmission, LIMITS, SITE_IDS } from "./validation.mjs";
 
 function rateLimiter({ limit, windowMs }) {
@@ -34,9 +34,11 @@ export function createApp({
   submitLimit = { limit: 5, windowMs: 10 * 60 * 1000 },
   ipSubmitLimit = { limit: 120, windowMs: 10 * 60 * 1000 },
   registerLimit = { limit: 300, windowMs: 60 * 60 * 1000 },
+  seedSamples = true,
 } = {}) {
   const secret = guestSecret || randomUUID() + randomUUID();
   const db = openDatabase(dbFile);
+  if (seedSamples) seedSampleMemories(db, now);
   const memories = createMemoryRepo(db, { now, newId: () => "mem_" + randomUUID() });
   const canSubmit = rateLimiter(submitLimit);
   const canSubmitFromIp = rateLimiter(ipSubmitLimit);

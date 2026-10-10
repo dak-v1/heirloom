@@ -55,9 +55,8 @@ export const BADGES: BadgeDef[] = [
     id: "memory-keeper",
     name: "Memory Keeper",
     description: "You left a note or drawing for future visitors.",
-    howToEarn: "Leave a memory at any site (arrives with shared memories).",
+    howToEarn: "Leave a note or drawing at any site.",
     art: "/assets/badges/memory-keeper.svg",
-    comingSoon: true,
   },
 ];
 

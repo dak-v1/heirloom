@@ -20,6 +20,8 @@ const AboutPage = lazy(() => info().then((m) => ({ default: m.AboutPage })));
 const PrivacyPage = lazy(() => info().then((m) => ({ default: m.PrivacyPage })));
 const TermsPage = lazy(() => info().then((m) => ({ default: m.TermsPage })));
 const NotFoundPage = lazy(() => info().then((m) => ({ default: m.NotFoundPage })));
+// Moderation: a separate chunk, reachable only by URL (not in any navigation).
+const AdminPage = lazy(() => import("./features/admin/AdminPage").then((m) => ({ default: m.AdminPage })));
 
 function PageLoading() {
   return (
@@ -100,6 +102,7 @@ function Root() {
                 <Route path="/about" element={<AboutPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/terms" element={<TermsPage />} />
+                <Route path="/admin" element={<AdminPage />} />
                 {HotspotDebug && (
                   <Route
                     path="/dev/hotspots"

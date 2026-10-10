@@ -102,9 +102,15 @@ export function PrivacyPage() {
       <p>The camera is used only if you open the Live Time Window preview. The video stays on your device, is never recorded or uploaded, and stops as soon as you close the preview.</p>
       <h2>Sound</h2>
       <p>Narration and soundscapes play only after you press play. Arriving at a place never starts sound.</p>
-      <h2>Shared memories (coming next)</h2>
+      <h2>Shared memories</h2>
       <p>
-        When notes and drawings launch, anything you choose to share will be stored on our server and reviewed by a moderator before it becomes public. Pending or rejected memories are never shown to other visitors. A display name will be optional; no email is collected.
+        Leaving a note or drawing is optional and never affects your stamp. What you share is stored on the Heirloom server with an anonymous guest ID that this browser keeps; there is no account and no email. A display name is optional and is shown with your memory if you give one.
+      </p>
+      <p>
+        Every new memory starts as <strong>waiting for review</strong> and is not visible to anyone else. It becomes public, on that place's wall only, after a moderator approves it. Memories that are rejected or hidden are never shown publicly, and moderation reasons are never published. In this browser you can see the status of your own submissions under “Your submissions” on each place.
+      </p>
+      <p>
+        Anyone can report a public memory; a memory that is reported several times is hidden until a moderator looks at it. To limit abuse, the server limits how many memories can be shared in a short time. Some memories are written by the Heirloom team as samples for the demo and are labelled “Sample”.
       </p>
       <h2>Third parties</h2>
       <p>
@@ -125,8 +131,10 @@ export function TermsPage() {
       <ul>
         <li>Share your own memories, notes and drawings about the place.</li>
         <li>No hate, harassment, personal information about others, advertising or anything unsafe.</li>
-        <li>Every contribution is reviewed before it appears publicly, and we may decline any submission.</li>
+        <li>Every contribution is reviewed by a moderator before it appears publicly. Moderators can approve, reject or later hide any memory, and we don't publish the reasons.</li>
         <li>Anyone can report a public memory; reported memories may be hidden while we review them.</li>
+        <li>Memories marked “Sample” were written by the Heirloom team to illustrate the wall. They are not real visitor accounts or historical sources.</li>
+        <li>Shared memories are personal impressions, not checked historical facts.</li>
       </ul>
       <h2>About the content</h2>
       <p>

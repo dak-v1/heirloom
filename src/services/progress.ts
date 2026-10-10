@@ -17,6 +17,8 @@ export interface VisitRecord {
   lastEraId?: string;
   hotspotsOpened: string[];
   narrationCompleted?: boolean;
+  /** The visitor shared a note or drawing here (it may still be awaiting review). */
+  memorySubmitted?: boolean;
   languagesUsed: LangCode[];
 }
 
@@ -232,6 +234,14 @@ export function createProgressService({ store = createBrowserStore(), now = () =
     recordNarrationCompleted(siteId: string) {
       const next = withVisit(siteId, (x) => ({ ...x, narrationCompleted: true }));
       const { next: n2, awarded } = award(next, ["good-listener"]);
+      commit(n2, awarded);
+      return awarded;
+    },
+
+    /** A memory was submitted (pending review). Awards Memory Keeper once. */
+    recordMemorySubmitted(siteId: string) {
+      const next = withVisit(siteId, (x) => ({ ...x, memorySubmitted: true }));
+      const { next: n2, awarded } = award(next, ["memory-keeper"]);
       commit(n2, awarded);
       return awarded;
     },

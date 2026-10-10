@@ -1,0 +1,64 @@
+import { useCallback, useState } from "react";
+
+/** One pen stroke, in normalised canvas coordinates so it redraws at any size. */
+export interface Stroke {
+  color: string;
+  /** Line width as a fraction of the canvas width. */
+  size: number;
+  points: [number, number][];
+}
+
+export interface MemoryDraftState {
+  tab: "note" | "draw";
+  text: string;
+  name: string;
+  strokes: Stroke[];
+}
+
+const EMPTY: MemoryDraftState = { tab: "note", text: "", name: "", strokes: [] };
+const key = (siteId: string) => `heirloom:memory-draft:${siteId}`;
+
+function load(siteId: string): MemoryDraftState {
+  try {
+    const raw = sessionStorage.getItem(key(siteId));
+    if (raw) return { ...EMPTY, ...(JSON.parse(raw) as Partial<MemoryDraftState>) };
+  } catch {
+    /* storage blocked or corrupt: start fresh */
+  }
+  return EMPTY;
+}
+
+function save(siteId: string, d: MemoryDraftState) {
+  try {
+    if (d.text || d.name || d.strokes.length) sessionStorage.setItem(key(siteId), JSON.stringify(d));
+    else sessionStorage.removeItem(key(siteId));
+  } catch {
+    /* quota or blocked: the draft still lives in memory for this visit */
+  }
+}
+
+/**
+ * The memory being written for one site. Kept in state and in sessionStorage, so closing
+ * the sheet, switching tabs or a failed submission never loses it. Cleared only after a
+ * successful submission.
+ */
+export function useMemoryDraft(siteId: string) {
+  const [draft, setDraft] = useState<MemoryDraftState>(() => load(siteId));
+  const update = useCallback(
+    (patch: Partial<MemoryDraftState>) =>
+      setDraft((d) => {
+        const next = { ...d, ...patch };
+        save(siteId, next);
+        return next;
+      }),
+    [siteId],
+  );
+  const clear = useCallback(() => {
+    setDraft((d) => {
+      const next = { ...EMPTY, tab: d.tab, name: d.name };
+      save(siteId, next);
+      return next;
+    });
+  }, [siteId]);
+  return { draft, update, clear };
+}
