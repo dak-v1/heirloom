@@ -105,6 +105,8 @@
 .heritage-tour__language option { color: #29241d; background: #f5ecda; }
 .heritage-tour__dock-head .btn { min-height: 33px; padding: 5px 10px; color: #fff8e9; border-color: #ffffff43; background: transparent; }
 .heritage-tour__dock-head .btn:hover { background: #ffffff15; }
+.heritage-tour__dock-head .heritage-tour__finish { color: var(--tour-ink); border-color: #f5d897; background: #e8c879; font-weight: 750; }
+.heritage-tour__dock-head .heritage-tour__finish:hover { background: #f1d68e; }
 .heritage-tour__dock-actions { display: flex; gap: 8px; align-items: center; }
 .heritage-tour__progress { display: grid; grid-template-columns: 39px minmax(0, 1fr) 45px; gap: 9px; align-items: center; margin: 7px 0 0; color: #eee3d2; font-size: .67rem; font-variant-numeric: tabular-nums; }
 .heritage-tour__progress > span:last-child { text-align: right; }
@@ -163,7 +165,7 @@
   .heritage-tour__language select { max-width: 64px; font-size: .68rem; }
   .heritage-tour__dock-head .btn { min-height: 31px; padding: 4px 7px; font-size: .68rem; }
   .heritage-tour__dock-head .btn .btn__icon { margin-right: 3px; }
-  .heritage-tour__dock-actions { width: 100%; justify-content: flex-end; }
+  .heritage-tour__dock-actions { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
   .heritage-tour__memory-toggle { min-height: 31px; padding: 4px 9px; font-size: .67rem; }
   .heritage-tour__progress { grid-template-columns: 34px minmax(0, 1fr) 40px; gap: 6px; margin-top: 6px; font-size: .62rem; }
   .heritage-tour__controls { min-height: 47px; gap: clamp(4px, 2.2vw, 12px); }

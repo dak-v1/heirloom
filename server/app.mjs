@@ -5,6 +5,7 @@ import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { createMemoryRepo, MEMORY_STATUSES, openDatabase, seedSampleMemories } from "./db.mjs";
+import { createPostgresMemoryRepo } from "./db-postgres.mjs";
 import { ValidationError, validateSubmission, LIMITS, SITE_IDS } from "./validation.mjs";
 
 function rateLimiter({ limit, windowMs }) {
@@ -25,6 +26,7 @@ function rateLimiter({ limit, windowMs }) {
 
 export function createApp({
   dbFile = ":memory:",
+  databaseUrl = process.env.HEIRLOOM_DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_URL || "",
   adminToken = process.env.HEIRLOOM_ADMIN_TOKEN || "",
   guestSecret = process.env.HEIRLOOM_GUEST_SECRET || "",
   staticDir = null,
@@ -36,10 +38,12 @@ export function createApp({
   registerLimit = { limit: 300, windowMs: 60 * 60 * 1000 },
   seedSamples = true,
 } = {}) {
-  const secret = guestSecret || randomUUID() + randomUUID();
-  const db = openDatabase(dbFile);
-  if (seedSamples) seedSampleMemories(db, now);
-  const memories = createMemoryRepo(db, { now, newId: () => "mem_" + randomUUID() });
+  const secret = guestSecret || databaseUrl || randomUUID() + randomUUID();
+  const db = databaseUrl ? null : openDatabase(dbFile);
+  if (db && seedSamples) seedSampleMemories(db, now);
+  const memories = databaseUrl
+    ? createPostgresMemoryRepo({ connectionString: databaseUrl, now, newId: () => "mem_" + randomUUID(), seedSamples })
+    : createMemoryRepo(db, { now, newId: () => "mem_" + randomUUID() });
   const canSubmit = rateLimiter(submitLimit);
   const canSubmitFromIp = rateLimiter(ipSubmitLimit);
   const canReport = rateLimiter({ limit: 20, windowMs: 60 * 60 * 1000 });
@@ -84,7 +88,7 @@ export function createApp({
   app.get("/api/health", (req, res) => {
     res.json({
       ok: true,
-      memories: { storage: "sqlite", moderation: adminToken ? "configured" : "not-configured", limits: LIMITS },
+      memories: { storage: databaseUrl ? "postgres" : "sqlite", moderation: adminToken ? "configured" : "not-configured", limits: LIMITS },
       narration: { pregenerationConfigured: Boolean(process.env.ELEVENLABS_API_KEY) },
     });
   });
@@ -96,7 +100,7 @@ export function createApp({
     res.status(201).json({ guestId, token: `${guestId}.${sign(guestId)}` });
   });
 
-  app.post("/api/memories", (req, res) => {
+  app.post("/api/memories", async (req, res) => {
     const guestId = verifyGuest(req);
     if (!guestId) return res.status(401).json({ error: "Missing or invalid guest token." });
     if (!canSubmit(guestId) || !canSubmitFromIp(req.ip)) {
@@ -104,7 +108,7 @@ export function createApp({
     }
     try {
       const input = validateSubmission(req.body);
-      const created = memories.create({ ...input, guestId, status: "pending" });
+      const created = await memories.create({ ...input, guestId, status: "pending" });
       res.status(201).json({ id: created.id, status: created.status, createdAt: created.createdAt });
     } catch (e) {
       if (e instanceof ValidationError) return res.status(400).json({ error: e.message });
@@ -112,41 +116,41 @@ export function createApp({
     }
   });
 
-  app.get("/api/sites/:siteId/memories", (req, res) => {
+  app.get("/api/sites/:siteId/memories", async (req, res) => {
     if (!SITE_IDS.includes(req.params.siteId)) return res.status(404).json({ error: "Unknown site." });
-    res.json({ memories: memories.listApproved(req.params.siteId) });
+    res.json({ memories: await memories.listApproved(req.params.siteId) });
   });
 
-  app.get("/api/me/memories", (req, res) => {
+  app.get("/api/me/memories", async (req, res) => {
     const guestId = verifyGuest(req);
     if (!guestId) return res.status(401).json({ error: "Missing or invalid guest token." });
-    res.json({ memories: memories.listForGuest(guestId) });
+    res.json({ memories: await memories.listForGuest(guestId) });
   });
 
-  app.get("/api/memories/:id/drawing.png", (req, res) => {
-    const row = memories.getDrawing(req.params.id);
+  app.get("/api/memories/:id/drawing.png", async (req, res) => {
+    const row = await memories.getDrawing(req.params.id);
     const guestId = verifyGuest(req);
     if (!row || !row.drawing || (row.status !== "approved" && !isAdmin(req) && guestId !== row.guest_id)) return res.status(404).end();
     res.set({ "Content-Type": "image/png", "Content-Security-Policy": "default-src 'none'", "Cache-Control": row.status === "approved" ? "public, max-age=300" : "private, no-store" });
     res.send(Buffer.from(row.drawing));
   });
 
-  app.get("/api/memories/:id/photo", (req, res) => {
-    const row = memories.getPhoto(req.params.id);
+  app.get("/api/memories/:id/photo", async (req, res) => {
+    const row = await memories.getPhoto(req.params.id);
     const guestId = verifyGuest(req);
     if (!row || !row.photo || (row.status !== "approved" && !isAdmin(req) && guestId !== row.guest_id)) return res.status(404).end();
     res.set({ "Content-Type": row.photo_mime || "image/jpeg", "Content-Security-Policy": "default-src 'none'", "Cache-Control": row.status === "approved" ? "public, max-age=300" : "private, no-store" });
     res.send(Buffer.from(row.photo));
   });
 
-  app.post("/api/memories/:id/report", (req, res) => {
+  app.post("/api/memories/:id/report", async (req, res) => {
     const key = verifyGuest(req) ?? `ip:${req.ip}`;
     const once = `${key}:${req.params.id}`;
     if (reported.has(once)) return res.status(202).json({ ok: true });
     if (!canReport(key)) return res.status(429).json({ error: "Too many reports." });
     reported.add(once);
     if (reported.size > 20000) reported.clear();
-    memories.report(req.params.id);
+    await memories.report(req.params.id);
     res.status(202).json({ ok: true });
   });
 
@@ -157,15 +161,15 @@ export function createApp({
     next();
   };
 
-  app.get("/api/admin/memories", requireAdmin, (req, res) => {
+  app.get("/api/admin/memories", requireAdmin, async (req, res) => {
     const status = MEMORY_STATUSES.includes(req.query.status) ? req.query.status : "pending";
-    res.json({ memories: memories.listByStatus(status) });
+    res.json({ memories: await memories.listByStatus(status) });
   });
 
   for (const [action, status] of [["approve", "approved"], ["reject", "rejected"], ["hide", "hidden"]]) {
-    app.post(`/api/admin/memories/:id/${action}`, requireAdmin, (req, res) => {
+    app.post(`/api/admin/memories/:id/${action}`, requireAdmin, async (req, res) => {
       const reason = typeof req.body?.reason === "string" ? req.body.reason.slice(0, 300) : null;
-      if (!memories.moderate(req.params.id, status, reason)) return res.status(404).json({ error: "Memory not found." });
+      if (!await memories.moderate(req.params.id, status, reason)) return res.status(404).json({ error: "Memory not found." });
       res.json({ id: req.params.id, status });
     });
   }

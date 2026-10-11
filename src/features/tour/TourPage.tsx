@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type TouchEvent as ReactTouchEvent } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, BookOpen, ChevronDown, ChevronLeft, ChevronRight, FileText, Globe2, Image as ImageIcon, Info, MessageSquareHeart, Pause, Play, RotateCcw, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, ChevronLeft, ChevronRight, FileText, Globe2, Image as ImageIcon, Info, MessageSquareHeart, Pause, Play, RotateCcw, SkipBack, SkipForward, Stamp, Volume2 } from "lucide-react";
 import { findSite, SITES } from "../../content/sites";
 import { LANGUAGE_BY_CODE } from "../../content/languages";
 import type { NarrationTrack } from "../../services/audio/narration";
@@ -16,6 +16,9 @@ import { Immersive } from "../site/PastView";
 import { useSiteStory } from "../audio/useSiteStory";
 import { HeritageScene } from "./HeritageScene";
 import { tourConfig } from "./config";
+import type { EarnResult } from "../../services/progress";
+import { progress } from "../../state/progress";
+import { StampReward } from "../completion/Completion";
 import "../site/site.css";
 import "./tour.css";
 
@@ -45,6 +48,7 @@ function TourExperience({ site, demo }: { site: (typeof SITES)[number]; demo: bo
   const [memoryBusy, setMemoryBusy] = useState(false);
   const [memoryWallOpen, setMemoryWallOpen] = useState(false);
   const [memoryWallKey, setMemoryWallKey] = useState(0);
+  const [stampReward, setStampReward] = useState<EarnResult | null>(null);
   const swipeStart = useRef<{ x: number; y: number; at: number; interactive: boolean } | null>(null);
   const archiveEras = useMemo(
     () => site.eras.filter((era) => !era.isToday).slice().sort((a, b) => a.sortYear - b.sortYear),
@@ -85,6 +89,9 @@ function TourExperience({ site, demo }: { site: (typeof SITES)[number]; demo: bo
   const playStory = () => {
     if (storyMode === "full") story.play();
     else player.play();
+  };
+  const finishVisit = () => {
+    setStampReward(progress.earnStamp(site.id, site.stamp.id));
   };
   const playing = narration.status === "playing";
   const sentence = narration.currentSentence || selectedTrack.paragraphs[0] || story.version.title;
@@ -208,6 +215,7 @@ function TourExperience({ site, demo }: { site: (typeof SITES)[number]; demo: bo
                   <button type="button" className="heritage-tour__memory-toggle" onClick={() => { setMemoryWallOpen(false); setMemoryOpen(true); }}>
                     <MessageSquareHeart size={15} /> Leave a memory
                   </button>
+                  <Button className="heritage-tour__finish" size="sm" ticket icon={<Stamp size={15} />} onClick={finishVisit}>I'm done</Button>
                 </div>
               </div>
 
@@ -257,6 +265,7 @@ function TourExperience({ site, demo }: { site: (typeof SITES)[number]; demo: bo
           />
         )}
       </Sheet>
+      {stampReward && <StampReward site={site} result={stampReward} onPlaceLater={() => setStampReward(null)} />}
     </>
   );
 }
