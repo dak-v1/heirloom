@@ -8,7 +8,7 @@ const sheet = `<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="760"
 <image href="${f("public/assets/decor/postmark.svg")}" x="480" y="10" width="300" height="183"/>
 <image href="${pngUri("public/icons/icon-192.png")}" x="20" y="150" width="128" height="128"/>
 <image href="${pngUri("public/icons/icon-maskable-512.png")}" x="160" y="150" width="128" height="128"/>
-<image href="${f("public/favicon.svg")}" x="300" y="150" width="32" height="32"/>
+<image href="${pngUri("public/favicon.png")}" x="300" y="150" width="32" height="32"/>
 <image href="${f("public/assets/decor/waves.svg")}" x="300" y="200" width="120" height="40"/>
 <image href="${f("public/assets/decor/orchid.svg")}" x="800" y="10" width="160" height="218"/>
 <image href="${f("public/assets/decor/stamp-tool.svg")}" x="460" y="200" width="100" height="130"/>

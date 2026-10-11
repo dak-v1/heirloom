@@ -55,7 +55,7 @@ function IdentityContent({ identity }: { identity: IdentityInfo }) {
       {identity.avatar ? (
         <img className="identity__photo" src={identity.avatar} alt="" width={64} height={64} />
       ) : (
-        <img className="identity__mark" src="/assets/brand/mark.svg" alt="" width={44} height={44} />
+        <img className="identity__mark" src="/assets/brand/mark.png" alt="" width={44} height={44} />
       )}
       <p className="identity__kicker">Heirloom</p>
       <h3 className="identity__title">Heritage Passport</h3>

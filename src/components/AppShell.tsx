@@ -28,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </a>
         <header className="topbar">
           <Link to="/" className="topbar__brand" aria-label="Heirloom home">
-            <img src="/assets/brand/mark.svg" alt="" width={30} height={30} />
+            <img src="/assets/brand/mark.png" alt="" width={30} height={30} />
             <span>Heirloom</span>
           </Link>
           <IconButton label="More: about, privacy, preferences and demo tools" onClick={() => setMenu(true)}>

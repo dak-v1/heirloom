@@ -1,5 +1,7 @@
 // Brand marks and decorative ephemera: logo, app icons, postmark, cancellation
 // waves, orchid sprig, shophouse divider and the rubber-stamp tool illustration.
+import { readFileSync } from "node:fs";
+import { Resvg } from "@resvg/resvg-js";
 import { textPath, FONTS } from "./fonts.mjs";
 import { P } from "./palette.mjs";
 
@@ -29,45 +31,35 @@ export function arcText(text, { file, size, cx, cy, r, centerDeg = 0, tracking =
   return out.join("");
 }
 
-function perforatedRect(x, y, w, h, r = 6, step = 16) {
-  // Returns a path of a rectangle whose edges are scalloped by semicircular bites.
-  const bites = (len) => Math.max(2, Math.round(len / step));
-  let d = `M${x} ${y + r}`;
-  const nT = bites(w), nR = bites(h);
-  const sx = w / nT, sy = h / nR;
-  d = `M${x} ${y}`;
-  for (let i = 0; i < nT; i++) {
-    const x0 = x + i * sx, xm = x0 + sx / 2;
-    d += ` L${r2(xm - r)} ${y} A${r} ${r} 0 0 0 ${r2(xm + r)} ${y} L${r2(x0 + sx)} ${y}`;
-  }
-  for (let i = 0; i < nR; i++) {
-    const y0 = y + i * sy, ym = y0 + sy / 2;
-    d += ` L${x + w} ${r2(ym - r)} A${r} ${r} 0 0 0 ${x + w} ${r2(ym + r)} L${x + w} ${r2(y0 + sy)}`;
-  }
-  for (let i = nT - 1; i >= 0; i--) {
-    const x0 = x + i * sx, xm = x0 + sx / 2;
-    d += ` L${r2(xm + r)} ${y + h} A${r} ${r} 0 0 0 ${r2(xm - r)} ${y + h} L${r2(x0)} ${y + h}`;
-  }
-  for (let i = nR - 1; i >= 0; i--) {
-    const y0 = y + i * sy, ym = y0 + sy / 2;
-    d += ` L${x} ${r2(ym + r)} A${r} ${r} 0 0 0 ${x} ${r2(ym - r)} L${x} ${r2(y0)}`;
-  }
-  return d + " Z";
+// The mark's artwork lives in scripts/assets/source: the illustrated stamp cut out of its
+// paper (heirloom-mark.png), and a single-ink version of it (heirloom-mark-mono.png).
+const ART = 768;
+const sourceUri = (file) => `data:image/png;base64,${readFileSync(new URL(`../source/${file}`, import.meta.url)).toString("base64")}`;
+const MARK_ART = sourceUri("heirloom-mark.png");
+const MARK_MONO_ART = sourceUri("heirloom-mark-mono.png");
+
+/** The mark's artwork scaled down to `px`, as a PNG data URI for small embeds. */
+export function markArt(px) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${ART} ${ART}"><image href="${MARK_ART}" width="${ART}" height="${ART}"/></svg>`;
+  return `data:image/png;base64,${new Resvg(svg, { fitTo: { mode: "width", value: px } }).render().asPng().toString("base64")}`;
 }
 
-/** The Heirloom mark: a perforated terracotta stamp holding a serif H. */
-export function markSvg({ size = 512, background = null, inset = 0 } = {}) {
+/** The Heirloom mark: a perforated terracotta stamp holding a serif H wound with a flowering sprig. `inset` widens the margin; a negative one narrows it. */
+export function markSvg({ size = 512, background = null, inset = 0, art = MARK_ART } = {}) {
   const S = 512;
   const pad = 76 + inset;
-  const stamp = perforatedRect(pad, pad, S - pad * 2, S - pad * 2, 15, 46);
-  const H = textPath("H", { file: FONTS.display(900), size: 300 - inset * 1.1, x: 256, y: 362 - inset * 0.35, anchor: "middle" });
-  const inner = pad + 30;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${S} ${S}" width="${size}" height="${size}">
 <title>Heirloom</title>
 ${background ? `<rect width="${S}" height="${S}" fill="${background}"/>` : ""}
-<path d="${stamp}" fill="${P.terracotta}"/>
-<rect x="${inner}" y="${inner}" width="${S - inner * 2}" height="${S - inner * 2}" fill="none" stroke="${P.paperLight}" stroke-width="7"/>
-<path d="${H.d}" fill="${P.paperLight}"/>
+<image href="${art}" x="${pad}" y="${pad}" width="${S - pad * 2}" height="${S - pad * 2}"/>
+</svg>`;
+}
+
+/** The mark in a single ink, for foil and blind stamping: `color` where the terracotta was, clear elsewhere. */
+export function markMonoSvg({ color, size = 512 }) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${ART} ${ART}" width="${size}" height="${size}">
+<mask id="mark-ink"><image href="${MARK_MONO_ART}" width="${ART}" height="${ART}"/></mask>
+<rect width="${ART}" height="${ART}" fill="${color}" mask="url(#mark-ink)"/>
 </svg>`;
 }
 
@@ -76,7 +68,7 @@ export function logoSvg({ color = P.ink } = {}) {
   const word = textPath("Heirloom", { file: FONTS.display(700), size: 64, x: 104, y: 66 });
   const tag = textPath("EVERY STREET HAS A STORY", { file: FONTS.display(600), size: 11.5, x: 106, y: 90, tracking: 0.28 });
   const width = Math.ceil(Math.max(104 + word.width, 106 + tag.width) + 8);
-  const mark = markSvg({ size: 92 }).replace(/<\?xml[^>]*>/, "").replace("<svg ", '<svg x="0" y="4" ');
+  const mark = markSvg({ size: 92, art: markArt(192) }).replace(/<\?xml[^>]*>/, "").replace("<svg ", '<svg x="0" y="4" ');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} 100" width="${width}" height="100">
 <title>Heirloom</title>
 ${mark}

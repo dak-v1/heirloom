@@ -1,7 +1,7 @@
 // Texture artwork for the 3D Heritage Passport. All sheets use an 880 × 1250
 // viewBox (88 × 125 mm passport proportions) unless noted.
 import { textPath, FONTS } from "./fonts.mjs";
-import { arcText, markSvg, orchidSvg, postmarkSvg, shophouseDividerSvg } from "./brand.mjs";
+import { arcText, markArt, markMonoSvg, orchidSvg, postmarkSvg, shophouseDividerSvg } from "./brand.mjs";
 import { P } from "./palette.mjs";
 import LAYOUT from "../../../src/content/passport-layout.json" with { type: "json" };
 
@@ -84,7 +84,7 @@ export function coverBackSvg(mode = "color") {
 <rect width="${COVER_W}" height="${COVER_H}" fill="${bg}"/>
 <rect x="44" y="44" width="${COVER_W - 88}" height="${COVER_H - 88}" rx="18" fill="none" stroke="${gold}" stroke-width="3"/>
 <g transform="translate(380 960)"><rect width="120" height="120" rx="4" fill="none" stroke="${gold}" stroke-width="4" stroke-dasharray="10 6"/>
-<path d="${textPath("H", { file: FONTS.display(900), size: 80, x: 60, y: 88, anchor: "middle" }).d}" fill="${gold}"/></g>
+<image href="${dataUri(markMonoSvg({ color: gold }))}" x="14" y="14" width="92" height="92"/></g>
 <path d="${note.d}" fill="${gold}" opacity="0.85"/>
 </svg>`;
 }
@@ -235,7 +235,7 @@ ${decor("identity", id)}
 <path d="${t("Heritage Passport", { size: 62, y: 228, w: 700 })}" fill="${ink}"/>
 <path d="M120 262 H${PW - 120}" stroke="${P.terracotta}" stroke-width="2.5"/>
 <rect x="${LAYOUT.identityPhoto.x}" y="${LAYOUT.identityPhoto.y}" width="${LAYOUT.identityPhoto.w}" height="${LAYOUT.identityPhoto.h}" rx="4" fill="${P.paper}" stroke="${ink}" stroke-width="2.5" stroke-dasharray="8 6"/>
-<image href="${dataUri(markSvg({ size: 512 }))}" x="168" y="372" width="100" height="100"/>
+<image href="${markArt(160)}" x="183" y="387" width="70" height="70"/>
 <path d="${t("YOUR", { size: 21, x: 218, y: 532, w: 600, tr: 0.2 })}${t("JOURNEY", { size: 21, x: 218, y: 562, w: 600, tr: 0.2 })}" fill="${P.inkMuted}"/>
 ${fields}
 <path d="${textPath("Every street has a story.", { file: FONTS.script(700), size: 64, x: 440, y: 890, anchor: "middle" }).d}" fill="${P.terracotta}"/>

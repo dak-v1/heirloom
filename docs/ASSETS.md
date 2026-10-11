@@ -75,9 +75,9 @@ Wooden rubber stamp: `Pad` (rubber, 0.6 × 0.6, origin at the rubber face centre
 ### `passport-cover.png` (440 px)
 Flat cover art: Home preview and the no-WebGL fallback.
 
-## Brand — `public/assets/brand/`, `public/icons/`, `public/favicon.svg`, `public/og-image.png`
+## Brand — `public/assets/brand/`, `public/icons/`, `public/favicon.png`, `public/og-image.png`
 
-Mark (perforated terracotta stamp with a serif H), horizontal logo (`logo.svg`, `logo-light.svg`), PWA icons 192/512 plus maskable 512, Apple touch icon 180, social share image 1200 × 630.
+Mark (`mark.png`: a perforated terracotta stamp holding a serif H wound with a flowering sprig), horizontal logo (`logo.svg`, `logo-light.svg`), favicon, PWA icons 192/512 plus maskable 512, Apple touch icon 180, social share image 1200 × 630. The mark is illustrated artwork supplied by the team; `scripts/assets/source/heirloom-mark.png` is that artwork cut out of its paper background, and `heirloom-mark-mono.png` is a single-ink version used for the gold foil on the passport's back cover. Everything that shows the mark is built from these two files.
 
 ## Decor — `public/assets/decor/`
 

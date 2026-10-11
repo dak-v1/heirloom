@@ -138,7 +138,7 @@ export function BadgeBoard({ onOpen }: { onOpen: (badgeId: string) => void }) {
         </svg>
         <div className="board__cloth-wrap" aria-hidden="true">
           <div className="board__cloth">
-            <img className="board__print" src="/assets/brand/mark.svg" alt="" />
+            <img className="board__print" src="/assets/brand/mark.png" alt="" />
           </div>
         </div>
         <svg className="board__stitch" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

@@ -43,10 +43,10 @@ console.log("Avatars");
 for (const a of AVATARS) write(out("avatars", `${a.id}.svg`), avatarSvg(a.id));
 
 console.log("Brand");
-write(out("brand", "mark.svg"), markSvg());
+write(out("brand", "mark.png"), png(markSvg({ inset: -64 }), 256));
 write(out("brand", "logo.svg"), logoSvg());
 write(out("brand", "logo-light.svg"), logoSvg({ color: P.paperLight }));
-write(path.join(root, "public", "favicon.svg"), markSvg({ size: 64 }));
+write(path.join(root, "public", "favicon.png"), png(markSvg({ inset: -64 }), 64));
 write(path.join(root, "public", "icons", "icon-192.png"), png(markSvg({ background: P.paper }), 192));
 write(path.join(root, "public", "icons", "icon-512.png"), png(markSvg({ background: P.paper }), 512));
 write(path.join(root, "public", "icons", "icon-maskable-512.png"), png(markSvg({ background: P.paper, inset: 34 }), 512));
