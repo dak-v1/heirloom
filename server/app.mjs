@@ -4,7 +4,7 @@ import express from "express";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { createMemoryRepo, MEMORY_STATUSES, openDatabase } from "./db.mjs";
+import { createMemoryRepo, MEMORY_STATUSES, openDatabase, seedSampleMemories } from "./db.mjs";
 import { ValidationError, validateSubmission, LIMITS, SITE_IDS } from "./validation.mjs";
 
 function rateLimiter({ limit, windowMs }) {
@@ -29,14 +29,23 @@ export function createApp({
   guestSecret = process.env.HEIRLOOM_GUEST_SECRET || "",
   staticDir = null,
   now = () => new Date(),
+  // Limits are keyed per guest. The per-IP limits are only a generous backstop, because a
+  // whole room on one venue Wi-Fi shares a single IP.
   submitLimit = { limit: 5, windowMs: 10 * 60 * 1000 },
+  ipSubmitLimit = { limit: 120, windowMs: 10 * 60 * 1000 },
+  registerLimit = { limit: 300, windowMs: 60 * 60 * 1000 },
+  seedSamples = true,
 } = {}) {
   const secret = guestSecret || randomUUID() + randomUUID();
   const db = openDatabase(dbFile);
+  if (seedSamples) seedSampleMemories(db, now);
   const memories = createMemoryRepo(db, { now, newId: () => "mem_" + randomUUID() });
   const canSubmit = rateLimiter(submitLimit);
+  const canSubmitFromIp = rateLimiter(ipSubmitLimit);
   const canReport = rateLimiter({ limit: 20, windowMs: 60 * 60 * 1000 });
-  const canRegister = rateLimiter({ limit: 30, windowMs: 60 * 60 * 1000 });
+  const canRegister = rateLimiter(registerLimit);
+  // One report per guest per memory, so a single visitor can't hide a memory alone.
+  const reported = new Set();
 
   const sign = (guestId) => createHmac("sha256", secret).update(guestId).digest("base64url");
   const verifyGuest = (req) => {
@@ -66,7 +75,7 @@ export function createApp({
     });
     next();
   });
-  app.use("/api", express.json({ limit: "600kb" }));
+  app.use("/api", express.json({ limit: "800kb" }));
   app.use("/api", (req, res, next) => {
     res.set("Cache-Control", "no-store");
     next();
@@ -90,7 +99,7 @@ export function createApp({
   app.post("/api/memories", (req, res) => {
     const guestId = verifyGuest(req);
     if (!guestId) return res.status(401).json({ error: "Missing or invalid guest token." });
-    if (!canSubmit(guestId) || !canSubmit(`ip:${req.ip}`)) {
+    if (!canSubmit(guestId) || !canSubmitFromIp(req.ip)) {
       return res.status(429).json({ error: "You have shared several memories recently. Please try again in a few minutes." });
     }
     try {
@@ -116,14 +125,27 @@ export function createApp({
 
   app.get("/api/memories/:id/drawing.png", (req, res) => {
     const row = memories.getDrawing(req.params.id);
-    if (!row || !row.drawing || (row.status !== "approved" && !isAdmin(req))) return res.status(404).end();
-    res.set({ "Content-Type": "image/png", "Content-Security-Policy": "default-src 'none'", "Cache-Control": "public, max-age=300" });
+    const guestId = verifyGuest(req);
+    if (!row || !row.drawing || (row.status !== "approved" && !isAdmin(req) && guestId !== row.guest_id)) return res.status(404).end();
+    res.set({ "Content-Type": "image/png", "Content-Security-Policy": "default-src 'none'", "Cache-Control": row.status === "approved" ? "public, max-age=300" : "private, no-store" });
     res.send(Buffer.from(row.drawing));
+  });
+
+  app.get("/api/memories/:id/photo", (req, res) => {
+    const row = memories.getPhoto(req.params.id);
+    const guestId = verifyGuest(req);
+    if (!row || !row.photo || (row.status !== "approved" && !isAdmin(req) && guestId !== row.guest_id)) return res.status(404).end();
+    res.set({ "Content-Type": row.photo_mime || "image/jpeg", "Content-Security-Policy": "default-src 'none'", "Cache-Control": row.status === "approved" ? "public, max-age=300" : "private, no-store" });
+    res.send(Buffer.from(row.photo));
   });
 
   app.post("/api/memories/:id/report", (req, res) => {
     const key = verifyGuest(req) ?? `ip:${req.ip}`;
+    const once = `${key}:${req.params.id}`;
+    if (reported.has(once)) return res.status(202).json({ ok: true });
     if (!canReport(key)) return res.status(429).json({ error: "Too many reports." });
+    reported.add(once);
+    if (reported.size > 20000) reported.clear();
     memories.report(req.params.id);
     res.status(202).json({ ok: true });
   });

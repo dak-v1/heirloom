@@ -149,6 +149,16 @@ export interface StampDesign {
   dateBand: { x: number; y: number; w: number; h: number };
 }
 
+/** Anything with a stamp in the passport: a trail site, or a placeholder demo stamp. */
+export interface StampPlace {
+  id: string;
+  slug: string;
+  name: string;
+  stamp: StampDesign;
+  /** A placeholder for demos: not on the trail and has no visit page. */
+  demo?: boolean;
+}
+
 export interface LocalName {
   text: string;
   lang: string;
@@ -186,7 +196,12 @@ export interface BadgeDef {
   name: string;
   description: string;
   howToEarn: string;
+  /** Enamel pin artwork (public/assets/badges). */
   art: string;
+  /** What the pin depicts, for the close-up. */
+  motif: string;
+  /** A line of heritage background about the motif. */
+  about: string;
   /** Not yet earnable in this build (feature lands in a later stage). */
   comingSoon?: boolean;
 }

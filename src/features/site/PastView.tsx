@@ -4,7 +4,7 @@ import { Camera, Info, List, Puzzle, X } from "lucide-react";
 import type { Era, Site } from "../../content/types";
 import { IMAGE_KIND_LABEL } from "../../content/media";
 import { IconButton, Button } from "../../components/Button";
-import { Tag } from "../../components/Media";
+import { Tag, hideBrokenImage } from "../../components/Media";
 import { ImageStage } from "./ImageStage";
 import { EraTimeline } from "./EraTimeline";
 import { MiniPlayer } from "../audio/StoryPlayer";
@@ -65,7 +65,7 @@ export function PastView({ site, eraId, onEra, openedKeys, onOpenHotspot, onClos
     <Immersive label={`Past View of ${site.name}`} onClose={onClose}>
       <div className="past" data-today={era.isToday ? "true" : "false"}>
         <div className="past__backdrop" aria-hidden="true">
-          <img src={today.image.srcSmall ?? today.image.src} alt="" referrerPolicy="no-referrer" />
+          <img src={today.image.srcSmall ?? today.image.src} alt="" referrerPolicy="no-referrer" onError={hideBrokenImage} />
         </div>
 
         <header className="past__bar">

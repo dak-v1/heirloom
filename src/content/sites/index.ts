@@ -1,4 +1,5 @@
-import type { Site } from "../types";
+import type { Site, StampPlace } from "../types";
+import { DEMO_PLACES } from "../demo-stamps";
 import { thianHockKeng } from "./thian-hock-keng";
 import { sriMariammanTemple } from "./sri-mariamman-temple";
 import { sultanMosque } from "./sultan-mosque";
@@ -14,4 +15,11 @@ for (const s of SITES) {
 
 export function findSite(idOrSlug: string | undefined | null): Site | undefined {
   return idOrSlug ? byKey.get(idOrSlug) : undefined;
+}
+
+const stampPlaces = new Map<string, StampPlace>([...SITES, ...DEMO_PLACES].map((p) => [p.id, p]));
+
+/** Whose stamp this is: a trail site or a placeholder demo stamp. Use for anything in the passport. */
+export function findStampPlace(id: string | undefined | null): StampPlace | undefined {
+  return id ? stampPlaces.get(id) : undefined;
 }

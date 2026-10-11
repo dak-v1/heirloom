@@ -31,7 +31,7 @@ const force = flag("force");
 
 const apiKey = process.env.ELEVENLABS_API_KEY;
 const voiceId = process.env.ELEVENLABS_VOICE_ID;
-const voiceName = process.env.ELEVENLABS_VOICE_NAME || voiceId;
+const voiceName = process.env.ELEVENLABS_VOICE_NAME || "Heritage guide";
 const modelId = process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2";
 if (!dryRun && (!apiKey || !voiceId)) {
   console.error("Set ELEVENLABS_API_KEY and ELEVENLABS_VOICE_ID (in .env or the environment), or use --dry-run.");
@@ -41,6 +41,7 @@ if (!dryRun && (!apiKey || !voiceId)) {
 // Load the TypeScript content through Vite so this script reads exactly what the app shows.
 const vite = await createServer({ root, logLevel: "error", server: { middlewareMode: true, hmr: false }, appType: "custom" });
 const { SITES } = await vite.ssrLoadModule("/src/content/sites/index.ts");
+const { storySummaryParagraphs } = await vite.ssrLoadModule("/src/services/audio/narration.ts");
 await vite.close();
 
 const outDir = path.join(root, "public", "audio", "narration");
@@ -58,32 +59,38 @@ for (const site of SITES) {
       console.log(`- ${site.id} [${lang}]: no ${lang} version, skipped`);
       continue;
     }
-    const text = [v.title + ".", ...v.paragraphs].join("\n\n");
-    const key = createHash("sha256").update([site.id, lang, site.story.version, voiceId, modelId, text].join("|")).digest("hex").slice(0, 10);
-    const file = `${site.id}.${lang}.v${site.story.version}.${key}.mp3`;
-    const target = path.join(outDir, file);
-    chars += text.length;
-    if (existsSync(target) && !force) {
-      console.log(`= ${site.id} [${lang}]: cached ${file}`);
-    } else if (dryRun) {
-      console.log(`? ${site.id} [${lang}]: would generate ${file} (${text.length} characters${v.status === "draft-translation" ? ", DRAFT translation" : ""})`);
-      continue;
-    } else {
-      console.log(`> ${site.id} [${lang}]: generating ${file} …`);
-      const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`, {
-        method: "POST",
-        headers: { "xi-api-key": apiKey, "content-type": "application/json", accept: "audio/mpeg" },
-        body: JSON.stringify({ text, model_id: modelId, voice_settings: { stability: 0.55, similarity_boost: 0.75 } }),
-      });
-      if (!r.ok) {
-        console.error(`  failed: HTTP ${r.status} ${await r.text().catch(() => "")}`);
-        process.exitCode = 1;
+    const tracks = [
+      { kind: "story", paragraphs: [v.title + ".", ...v.paragraphs] },
+      { kind: "summary", paragraphs: storySummaryParagraphs(v) },
+    ];
+    for (const track of tracks) {
+      const text = track.paragraphs.join("\n\n");
+      const key = createHash("sha256").update([site.id, lang, track.kind, site.story.version, voiceId, modelId, text].join("|")).digest("hex").slice(0, 10);
+      const file = `${site.id}.${lang}.${track.kind}.v${site.story.version}.${key}.mp3`;
+      const target = path.join(outDir, file);
+      chars += text.length;
+      if (existsSync(target) && !force) {
+        console.log(`= ${site.id} [${lang}] ${track.kind}: cached ${file}`);
+      } else if (dryRun) {
+        console.log(`? ${site.id} [${lang}] ${track.kind}: would generate ${file} (${text.length} characters${v.status === "draft-translation" ? ", DRAFT translation" : ""})`);
         continue;
+      } else {
+        console.log(`> ${site.id} [${lang}] ${track.kind}: generating ${file} …`);
+        const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`, {
+          method: "POST",
+          headers: { "xi-api-key": apiKey, "content-type": "application/json", accept: "audio/mpeg" },
+          body: JSON.stringify({ text, model_id: modelId, voice_settings: { stability: 0.55, similarity_boost: 0.75 } }),
+        });
+        if (!r.ok) {
+          console.error(`  ElevenLabs request failed with HTTP ${r.status}. Check the API key, voice ID, quota, and model settings.`);
+          process.exitCode = 1;
+          continue;
+        }
+        writeFileSync(target, Buffer.from(await r.arrayBuffer()));
       }
-      writeFileSync(target, Buffer.from(await r.arrayBuffer()));
+      manifest.entries = manifest.entries.filter((e) => !(e.siteId === site.id && e.lang === lang && (e.kind ?? "story") === track.kind));
+      manifest.entries.push({ siteId: site.id, lang, storyVersion: site.story.version, kind: track.kind, url: `/audio/narration/${file}`, voice: voiceName, generator: "elevenlabs", model: modelId });
     }
-    manifest.entries = manifest.entries.filter((e) => !(e.siteId === site.id && e.lang === lang));
-    manifest.entries.push({ siteId: site.id, lang, storyVersion: site.story.version, url: `/audio/narration/${file}`, voice: voiceName, generator: "elevenlabs", model: modelId });
   }
 }
 

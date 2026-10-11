@@ -92,7 +92,7 @@ export function LocationProvider({ children }: { children: ReactNode }) {
 
   const stop = useCallback(() => {
     enabled.current = false;
-    sessionStorage.removeItem(SESSION_FLAG);
+    sessionStorage.setItem(SESSION_FLAG, "0");
     endWatch();
     setFix(null);
     setStatus("off");
@@ -110,9 +110,12 @@ export function LocationProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [beginWatch, endWatch]);
 
-  // Resume after a reload in the same tab, only if permission was already granted (no new prompt).
+  // Resume when the browser already grants location permission. This never opens
+  // a new permission prompt; visitors who have not granted access stay opted out.
   useEffect(() => {
-    if (sessionStorage.getItem(SESSION_FLAG) !== "1" || !navigator.permissions?.query) return;
+    const sessionChoice = sessionStorage.getItem(SESSION_FLAG);
+    if (sessionChoice === "0") return endWatch;
+    if (!navigator.permissions?.query) return endWatch;
     navigator.permissions
       .query({ name: "geolocation" as PermissionName })
       .then((p) => {

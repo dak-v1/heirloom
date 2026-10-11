@@ -61,7 +61,7 @@ function StatusLine({ story }: { story: Story }) {
   return (
     <div className="story__status">
       {story.version.status === "draft-translation" && <Tag tone="draft">Draft translation</Tag>}
-      {n.voiceLabel && <Tag tone={n.mode === "file" ? "olive" : "plain"}>{n.mode === "file" ? "Synthetic voice" : "Device voice"}</Tag>}
+      {n.voiceLabel && <Tag tone="olive">ElevenLabs voice</Tag>}
       {n.voiceLabel && <span className="muted story__voice">{n.voiceLabel}</span>}
     </div>
   );
@@ -80,7 +80,7 @@ export function StoryPlayer({ site, story, onOpenTranscript }: { site: Site; sto
       </p>
       <LanguagePicker story={story} />
       <div className="story__controls">
-        <IconButton label={n.mode === "file" ? "Back 15 seconds" : "Previous sentence"} onClick={() => player.skip(-1)} disabled={disabled}>
+        <IconButton label="Back 15 seconds" onClick={() => player.skip(-1)} disabled={disabled}>
           <SkipBack size={22} />
         </IconButton>
         <button
@@ -92,7 +92,7 @@ export function StoryPlayer({ site, story, onOpenTranscript }: { site: Site; sto
         >
           {playing ? <Pause size={30} aria-hidden="true" /> : <Play size={30} aria-hidden="true" style={{ marginLeft: 3 }} />}
         </button>
-        <IconButton label={n.mode === "file" ? "Forward 15 seconds" : "Next sentence"} onClick={() => player.skip(1)} disabled={disabled}>
+        <IconButton label="Forward 15 seconds" onClick={() => player.skip(1)} disabled={disabled}>
           <SkipForward size={22} />
         </IconButton>
         <IconButton label="Replay from the start" onClick={() => player.replay()} disabled={disabled}>
@@ -104,7 +104,7 @@ export function StoryPlayer({ site, story, onOpenTranscript }: { site: Site; sto
         <div className="progress-bar" role="progressbar" aria-label="Story progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(n.progress * 100)}>
           <span style={{ width: `${n.progress * 100}%` }} />
         </div>
-        <span>{n.mode === "speech" ? "~" : ""}{formatTime(n.duration)}</span>
+        <span>{formatTime(n.duration)}</span>
       </div>
       <StatusLine story={story} />
       {n.message && (
@@ -238,7 +238,7 @@ export function TranscriptSheet({ open, onClose, site, story }: { open: boolean;
           ))}
         </ul>
         <p className="muted" style={{ marginTop: 12 }}>
-          Narration uses a synthetic voice (your device's text-to-speech, or pre-generated audio where available). It is not a historical recording.
+          Narration uses a synthetic ElevenLabs voice. It is not a historical recording.
         </p>
       </div>
     </Sheet>

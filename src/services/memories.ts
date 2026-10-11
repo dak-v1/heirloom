@@ -1,6 +1,6 @@
-// Client for the shared-memories API (server/app.mjs). The storage, guest identity
-// and moderation rules are implemented and tested; the composer, wall and
-// moderation UI are Stage 2 work.
+// Client for the shared-memories API (server/app.mjs). Storage, guest identity
+// and moderation rules are enforced by the server; this client handles owner,
+// public and moderation requests.
 //
 // Rules the server enforces (not the browser): new submissions are always
 // `pending`; only `approved` memories are returned publicly; approving requires
@@ -11,8 +11,11 @@ export type MemoryType = "note" | "drawing";
 export interface MemoryDraft {
   type: MemoryType;
   text?: string;
+  title?: string;
   /** PNG data URL from the drawing canvas. */
   drawing?: string;
+  /** Compressed JPEG data URL for an attached place memory. */
+  photo?: string;
   displayName?: string;
 }
 
@@ -21,9 +24,11 @@ export interface PublicMemory {
   siteId: string;
   type: MemoryType;
   text: string | null;
+  title: string | null;
   displayName: string | null;
   isSample: boolean;
   drawingUrl: string | null;
+  photoUrl: string | null;
   createdAt: string;
 }
 
@@ -91,11 +96,99 @@ export async function getApprovedMemories(siteId: string): Promise<PublicMemory[
   return (await call<{ memories: PublicMemory[] }>(`/api/sites/${encodeURIComponent(siteId)}/memories`)).memories;
 }
 
+/** True once this browser has a guest identity (i.e. it may have submissions of its own). */
+export function hasGuestToken() {
+  try {
+    return !!localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Forget this browser's memory identity (demo reset). Its submissions stay on the server,
+ * subject to moderation, but are no longer listed under "Your submissions" here.
+ */
+export function forgetGuestIdentity() {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** This guest's own submissions with their moderation status. */
 export async function getMyMemories(): Promise<OwnMemory[]> {
   return (await call<{ memories: OwnMemory[] }>("/api/me/memories", {}, true)).memories;
 }
 
+/** Fetch one of this guest's private submission images using the guest token. */
+export async function getOwnMemoryMedia(memoryId: string, kind: "photo" | "drawing"): Promise<string> {
+  const path = kind === "photo" ? "photo" : "drawing.png";
+  const fetchMedia = async (retried = false): Promise<string> => {
+    let response: Response;
+    try {
+      response = await fetch(`/api/memories/${encodeURIComponent(memoryId)}/${path}`, {
+        headers: { "x-heirloom-guest": await guestToken() },
+      });
+    } catch {
+      throw new MemoryApiError("You appear to be offline.", 0);
+    }
+    if (response.status === 401 && !retried) {
+      await guestToken(true);
+      return fetchMedia(true);
+    }
+    if (!response.ok) throw new MemoryApiError("Memory image unavailable.", response.status);
+    return URL.createObjectURL(await response.blob());
+  };
+  return fetchMedia();
+}
+
 export function reportMemory(memoryId: string) {
   return call<{ ok: true }>(`/api/memories/${encodeURIComponent(memoryId)}/report`, { method: "POST" }, true);
+}
+
+/* ---------- moderation (/admin). The token is passed per call and never logged or stored here. ---------- */
+
+export type ModerationStatus = OwnMemory["status"];
+
+export interface ModerationItem extends OwnMemory {
+  reportCount: number;
+}
+
+const adminHeaders = (token: string) => ({ authorization: `Bearer ${token}` });
+
+export async function adminListMemories(token: string, status: ModerationStatus = "pending"): Promise<ModerationItem[]> {
+  return (await call<{ memories: ModerationItem[] }>(`/api/admin/memories?status=${status}`, { headers: adminHeaders(token) })).memories;
+}
+
+export function adminModerate(token: string, memoryId: string, action: "approve" | "reject" | "hide") {
+  return call<{ id: string; status: ModerationStatus }>(`/api/admin/memories/${encodeURIComponent(memoryId)}/${action}`, {
+    method: "POST",
+    headers: adminHeaders(token),
+    body: "{}",
+  });
+}
+
+/** Drawings that aren't approved yet need the moderator token, which an <img> can't send: fetch and return an object URL. */
+export async function adminDrawingUrl(token: string, memoryId: string): Promise<string> {
+  let r: Response;
+  try {
+    r = await fetch(`/api/memories/${encodeURIComponent(memoryId)}/drawing.png`, { headers: adminHeaders(token) });
+  } catch {
+    throw new MemoryApiError("You appear to be offline.", 0);
+  }
+  if (!r.ok) throw new MemoryApiError("Drawing unavailable.", r.status);
+  return URL.createObjectURL(await r.blob());
+}
+
+export async function adminPhotoUrl(token: string, memoryId: string): Promise<string> {
+  let r: Response;
+  try {
+    r = await fetch(`/api/memories/${encodeURIComponent(memoryId)}/photo`, { headers: adminHeaders(token) });
+  } catch {
+    throw new MemoryApiError("You appear to be offline.", 0);
+  }
+  if (!r.ok) throw new MemoryApiError("Photo unavailable.", r.status);
+  return URL.createObjectURL(await r.blob());
 }

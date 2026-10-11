@@ -1,0 +1,111 @@
+{
+  "$comment": "Shared by scripts/assets (3D passport build) and src/features/passport/three (runtime). Page art uses an 880 x 1250 viewBox (88 x 125 mm).",
+  "page": {
+    "w": 880,
+    "h": 1250
+  },
+  "pages": [
+    {
+      "id": "cover",
+      "kind": "cover",
+      "template": "cover"
+    },
+    {
+      "id": "identity",
+      "kind": "identity",
+      "template": "identity"
+    },
+    {
+      "id": "p1",
+      "kind": "stamp",
+      "title": "Visas & Visits",
+      "template": "guilloche"
+    },
+    {
+      "id": "p2",
+      "kind": "stamp",
+      "title": "Along the River",
+      "template": "waves"
+    },
+    {
+      "id": "p3",
+      "kind": "stamp",
+      "title": "Temple Streets",
+      "template": "tiles"
+    },
+    {
+      "id": "p4",
+      "kind": "stamp",
+      "title": "Kampong Days",
+      "template": "orchid"
+    },
+    {
+      "id": "p5",
+      "kind": "stamp",
+      "title": "Shophouse Rows",
+      "template": "shophouses"
+    },
+    {
+      "id": "p6",
+      "kind": "stamp",
+      "title": "Notes & Keepsakes",
+      "template": "plain"
+    }
+  ],
+  "coverOpenDeg": -176,
+  "leaves": [
+    {
+      "node": "Leaf1",
+      "recto": "identity",
+      "verso": "p1"
+    },
+    {
+      "node": "Leaf2",
+      "recto": "p2",
+      "verso": "p3"
+    },
+    {
+      "node": "Leaf3",
+      "recto": "p4",
+      "verso": "p5"
+    },
+    {
+      "node": "Leaf4",
+      "recto": "p6",
+      "verso": "end"
+    }
+  ],
+  "identityFields": [
+    {
+      "id": "holder",
+      "label": "HOLDER",
+      "labelY": 352,
+      "lineY": 410
+    },
+    {
+      "id": "number",
+      "label": "PASSPORT NO.",
+      "labelY": 466,
+      "lineY": 524
+    },
+    {
+      "id": "issued",
+      "label": "ISSUED",
+      "labelY": 580,
+      "lineY": 638
+    },
+    {
+      "id": "stamps",
+      "label": "STAMPS COLLECTED",
+      "labelY": 694,
+      "lineY": 752
+    }
+  ],
+  "identityFieldX": 380,
+  "identityPhoto": {
+    "x": 100,
+    "y": 320,
+    "w": 236,
+    "h": 300
+  }
+}

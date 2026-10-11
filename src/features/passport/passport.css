@@ -35,23 +35,29 @@
   color: var(--ink-muted);
 }
 
-.place-notice {
-  display: flex;
-  gap: var(--space-4);
-  align-items: flex-start;
+.passport-book {
   margin-top: var(--space-6);
+  outline: none;
+  scroll-margin-top: calc(var(--header-h) + var(--safe-top) + var(--space-2));
 }
-.place-notice__stamp {
-  width: 76px !important;
-  flex: none;
+.passport-book__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
-.place-notice h2 {
-  font-size: var(--text-lg);
-  margin-bottom: var(--space-2);
+.passport-book__head h2 {
+  margin: 0;
+  font-size: var(--text-xl);
 }
-.place-notice p {
+.passport-book__hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: var(--space-2);
   font-size: var(--text-sm);
-  margin-bottom: var(--space-3);
+  text-align: center;
 }
 
 .passport3d {
@@ -69,10 +75,6 @@
 .passport3d__canvas {
   position: absolute;
   inset: 0;
-  cursor: grab;
-}
-.passport3d__canvas:active {
-  cursor: grabbing;
 }
 .passport3d__canvas canvas {
   width: 100% !important;
@@ -116,33 +118,43 @@
   justify-content: center;
   padding: 0 var(--space-4);
 }
-.passport3d__dev {
-  margin: var(--space-4) var(--space-4) 0;
-}
-
 .tray {
   list-style: none;
   margin: 0;
-  padding: var(--space-3) var(--space-1) var(--space-4);
-  display: flex;
-  gap: var(--space-4);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
+  padding: var(--space-3) 0 var(--space-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--space-4) var(--space-3);
 }
 .tray li {
-  scroll-snap-align: start;
-  flex: none;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
 }
 .tray__item {
   display: grid;
   justify-items: center;
+  align-content: start;
   gap: 4px;
-  width: 132px;
+  width: 140px;
+  max-width: 100%;
+  min-height: var(--touch);
   padding: var(--space-2);
   border: 0;
   border-radius: var(--radius-m);
   background: none;
   text-align: center;
+}
+/* Keep the focus ring inside the card so it never touches its neighbours. */
+.tray__item:focus-visible {
+  outline-offset: -3px;
+}
+.tray__item .tag {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  letter-spacing: 0.03em;
+  font-size: 0.6875rem;
 }
 .tray__item.is-highlight {
   background: var(--mustard-tint);
@@ -153,9 +165,11 @@
   margin-bottom: var(--space-2);
 }
 .tray__name {
+  max-width: 100%;
   font-family: var(--font-display);
   font-weight: 650;
   line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 .tray__date {
   font-size: var(--text-xs);
@@ -169,35 +183,38 @@
   color: var(--ink-muted);
 }
 
-.badges__intro {
+.passport-badges__link {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: var(--ink);
+  text-decoration: none;
+}
+.passport-badges__link > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
   font-size: var(--text-sm);
-  margin-bottom: var(--space-4);
 }
-.badges {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: var(--space-4);
-}
-.badge {
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  text-align: center;
-  font-size: var(--text-xs);
-}
-.badge img {
-  filter: grayscale(1) contrast(0.8) opacity(0.45);
-  transition: filter var(--dur-slow);
-}
-.badge.is-earned img {
-  filter: drop-shadow(0 4px 6px rgb(45 42 35 / 0.25));
-}
-.badge strong {
+.passport-badges__link strong {
   font-family: var(--font-display);
-  font-size: var(--text-sm);
+  font-size: var(--text-md);
+}
+.passport-badges__pins {
+  display: flex;
+}
+.passport-badges__pins img {
+  width: 42px;
+  height: 42px;
+  margin-left: -12px;
+  filter: drop-shadow(0 3px 3px rgb(45 42 35 / 0.25));
+}
+.passport-badges__pins img:first-child {
+  margin-left: 0;
+}
+.passport-badges__pins img.is-locked {
+  filter: grayscale(1) opacity(0.45);
 }
 .storage-note {
   margin-top: var(--space-8);

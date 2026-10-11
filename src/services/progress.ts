@@ -17,6 +17,8 @@ export interface VisitRecord {
   lastEraId?: string;
   hotspotsOpened: string[];
   narrationCompleted?: boolean;
+  /** The visitor shared a note or drawing here (it may still be awaiting review). */
+  memorySubmitted?: boolean;
   languagesUsed: LangCode[];
 }
 
@@ -236,6 +238,14 @@ export function createProgressService({ store = createBrowserStore(), now = () =
       return awarded;
     },
 
+    /** A memory was submitted (pending review). Awards Memory Keeper once. */
+    recordMemorySubmitted(siteId: string) {
+      const next = withVisit(siteId, (x) => ({ ...x, memorySubmitted: true }));
+      const { next: n2, awarded } = award(next, ["memory-keeper"]);
+      commit(n2, awarded);
+      return awarded;
+    },
+
     recordGameResult(siteId: string, gameId: string, result: { score: number; maxScore: number; perfect: boolean }) {
       const attempt: GameAttempt = { id: randomId("game_"), siteId, gameId, ...result, completedAt: now().toISOString() };
       const next = { ...state, gameAttempts: [...state.gameAttempts, attempt].slice(-50) };
@@ -304,6 +314,38 @@ export function createProgressService({ store = createBrowserStore(), now = () =
     setCurrentPassportPage(pageId: string) {
       if (state.passport.currentPageId === pageId) return;
       commit({ ...state, passport: { ...state.passport, currentPageId: pageId } });
+    },
+
+    /**
+     * Demo helper: add placeholder stamps (src/content/demo-stamps.ts) so the passport
+     * looks well travelled. Ones with a `placement` are pressed straight onto that page.
+     * Stamps already present are skipped; returns how many were added. No badges, no visits.
+     */
+    addDemoStamps(items: { siteId: string; visitDate: string; placement?: PlacementInput }[]): number {
+      const have = new Set(state.earnedStamps.map((s) => s.siteId));
+      const at = now().toISOString();
+      const stamps: EarnedStamp[] = [];
+      const placements = [...state.placements];
+      for (const item of items) {
+        if (have.has(item.siteId)) continue;
+        have.add(item.siteId);
+        const stamp: EarnedStamp = { id: randomId("stamp_"), siteId: item.siteId, stampDesignId: `stamp-${item.siteId}`, earnedAt: at, visitDate: item.visitDate };
+        stamps.push(stamp);
+        const pl = item.placement;
+        if (pl && STAMPABLE_PAGE_IDS.includes(pl.pageId)) {
+          const topZ = Math.max(0, ...placements.filter((x) => x.pageId === pl.pageId).map((x) => x.zIndex));
+          placements.push({ id: randomId("place_"), earnedStampId: stamp.id, pageId: pl.pageId, ...clampPlacement(pl), zIndex: topZ + 1, placedAt: at, updatedAt: at });
+        }
+      }
+      if (stamps.length) commit({ ...state, earnedStamps: [...state.earnedStamps, ...stamps], placements });
+      return stamps.length;
+    },
+
+    /** Demo helper: take the placeholder stamps (and their placements) back out. */
+    removeDemoStamps(siteIds: string[]) {
+      const ids = new Set(state.earnedStamps.filter((s) => siteIds.includes(s.siteId)).map((s) => s.id));
+      if (!ids.size) return;
+      commit({ ...state, earnedStamps: state.earnedStamps.filter((s) => !ids.has(s.id)), placements: state.placements.filter((p) => !ids.has(p.earnedStampId)) });
     },
 
     /** Demo helper: wipe this browser's progress (new guest ID). */

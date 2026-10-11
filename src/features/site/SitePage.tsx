@@ -1,27 +1,30 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, BookOpen, Camera, Check, History, Info, List, MapPin, MessageSquareHeart, Puzzle, Stamp } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Box, Camera, Check, History, Info, List, MapPin, MessageSquareHeart, Puzzle, Stamp } from "lucide-react";
 import { findSite } from "../../content/sites";
 import type { Site } from "../../content/types";
 import { Button, ButtonLink, IconButton } from "../../components/Button";
 import { Sheet } from "../../components/Sheet";
-import { Tag } from "../../components/Media";
+import { Tag, hideBrokenImage } from "../../components/Media";
 import { useToast } from "../../components/Toast";
 import { formatDistance } from "../../services/arrival";
 import { track } from "../../services/analytics";
 import { playChime } from "../../services/audio/sfx";
 import type { EarnResult } from "../../services/progress";
 import { progress, useProgress } from "../../state/progress";
-import { getPreferences } from "../../state/preferences";
+import { getPreferences, useReducedMotion } from "../../state/preferences";
 import { useSiteStory } from "../audio/useSiteStory";
 import { StoryPlayer, TranscriptSheet } from "../audio/StoryPlayer";
 import { GuessTheYear, initialGameState, type GameState } from "../game/GuessTheYear";
 import { NextSiteCard, StampReward, formatVisitDate } from "../completion/Completion";
 import { useGeo } from "../location/geo-context";
+import { MemoryComposer } from "../memories/MemoryComposer";
+import { MemoryWall } from "../memories/MemoryWall";
 import { DetailsListSheet, HotspotSheet, SourcesSheet } from "./InfoSheets";
 import { hotspotKey } from "./ImageStage";
 import { PastView } from "./PastView";
 import { LiveWindow } from "./LiveWindow";
+import { useJourneyScroll } from "./useJourneyScroll";
 import "./site.css";
 
 export function SitePage() {
@@ -54,6 +57,8 @@ function SiteNotFound({ slug }: { slug?: string }) {
 type ArrivalKind = "location" | "simulated" | "manual" | undefined;
 
 function SiteExperience({ site }: { site: Site }) {
+  const journey = useRef<HTMLOListElement>(null);
+  useJourneyScroll(journey, useReducedMotion());
   const location = useLocation();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -76,8 +81,12 @@ function SiteExperience({ site }: { site: Site }) {
   const [game, setGame] = useState<GameState>(() => initialGameState(site.game));
   const [skippedGame, setSkippedGame] = useState(false);
   const [skippedMemory, setSkippedMemory] = useState(false);
+  const [memorySent, setMemorySent] = useState(false);
+  const [memoryBusy, setMemoryBusy] = useState(false);
+  const [wallKey, setWallKey] = useState(0);
   const [readTranscript, setReadTranscript] = useState(false);
   const [reward, setReward] = useState<EarnResult | null>(null);
+  const [heroBroken, setHeroBroken] = useState(false);
 
   const view = params.get("view");
   const playing = params.get("play") === "1";
@@ -139,6 +148,7 @@ function SiteExperience({ site }: { site: Site }) {
 
   const placeLater = () => {
     setReward(null);
+    if (placed) return;
     toast({ title: "Saved to your stamp tray", body: "Place it in your passport whenever you like.", image: site.stamp.art, tone: "success" });
   };
 
@@ -161,6 +171,10 @@ function SiteExperience({ site }: { site: Site }) {
           sizes="(max-width: 700px) 100vw, 700px"
           alt={today.image.alt}
           referrerPolicy="no-referrer"
+          onError={(e) => {
+            hideBrokenImage(e);
+            setHeroBroken(true);
+          }}
         />
         <div className="site-hero__bar">
           <IconButton label="Back to the map" variant="paper" onClick={() => navigate("/map")}>
@@ -171,7 +185,7 @@ function SiteExperience({ site }: { site: Site }) {
           </IconButton>
         </div>
         <p className="site-hero__credit">
-          {today.image.dateLabel} · {today.image.credit.creator}, {today.image.credit.license}
+          {heroBroken ? "Photo unavailable (you may be offline)" : `${today.image.dateLabel} · ${today.image.credit.creator}, ${today.image.credit.license}`}
         </p>
       </div>
 
@@ -200,6 +214,10 @@ function SiteExperience({ site }: { site: Site }) {
 
       <div className="page site-page">
         <p className="site-summary">{site.summary}</p>
+        <section className="site-tour-promo card" aria-label={`Explore ${site.name} in 3D`}>
+          <div><span className="label">A place-specific reconstruction</span><p>Step into a sourced historical interpretation of {site.name}, with interactive details and a spoken story.</p></div>
+          <ButtonLink to={`/tour/${site.slug}`} ticket icon={<Box size={18} />} iconRight={<ArrowRight size={18} />}>Explore in 3D</ButtonLink>
+        </section>
 
         {earned && (
           <div className="done-banner card">
@@ -216,7 +234,7 @@ function SiteExperience({ site }: { site: Site }) {
           </div>
         )}
 
-        <ol className="journey" aria-label="Your visit">
+        <ol className="journey" aria-label="Your visit" ref={journey}>
           <Step n={1} done={sawPast} title="See the past" icon={<History size={20} />}>
             <p>Hold the old photographs up against today's street. Pick an era and tap the numbered details.</p>
             <div className="step-actions">
@@ -271,13 +289,13 @@ function SiteExperience({ site }: { site: Site }) {
             </div>
           </Step>
 
-          <Step n={5} done={skippedMemory} optional title="Leave a memory" icon={<MessageSquareHeart size={20} />}>
+          <Step n={5} done={skippedMemory || memorySent || !!visit?.memorySubmitted} optional title="Leave a memory" icon={<MessageSquareHeart size={20} />}>
             <p>Pin a note or drawing to this place for future visitors.</p>
             <div className="step-actions">
               <Button variant="secondary" onClick={() => setSheet("memory")} icon={<MessageSquareHeart size={18} />}>
                 Leave a memory
               </Button>
-              {!skippedMemory && (
+              {!skippedMemory && !memorySent && (
                 <Button variant="ghost" onClick={() => setSkippedMemory(true)}>
                   Continue without sharing
                 </Button>
@@ -299,6 +317,8 @@ function SiteExperience({ site }: { site: Site }) {
           <Info size={18} aria-hidden="true" />
           <span>{site.visitNote}</span>
         </p>
+
+        <MemoryWall site={site} refreshKey={wallKey} onLeave={() => setSheet("memory")} />
 
         <NextSiteCard site={site} />
       </div>
@@ -329,25 +349,39 @@ function SiteExperience({ site }: { site: Site }) {
         open={sheet === "memory"}
         onClose={() => setSheet(null)}
         title="Leave a memory"
+        size="tall"
+        locked={memoryBusy}
         footer={
-          <Button
-            block
-            onClick={() => {
-              setSkippedMemory(true);
-              setSheet(null);
-            }}
-          >
-            Continue without sharing
-          </Button>
+          !memorySent && (
+            <Button
+              block
+              variant="secondary"
+              disabled={memoryBusy}
+              onClick={() => {
+                setSkippedMemory(true);
+                setSheet(null);
+              }}
+            >
+              Continue without sharing
+            </Button>
+          )
         }
       >
-        <p className="notice notice--demo">
-          <Tag tone="demo">Next build</Tag>
-          <span>
-            Writing notes and drawings, and the shared memory wall, arrive in the next stage of the build. The secure storage and moderation rules behind them are ready. You can finish your visit without sharing.
-          </span>
-        </p>
-        <p style={{ marginTop: 12 }}>When it launches, new memories will be reviewed by a moderator before anyone else can see them.</p>
+        <MemoryComposer
+          site={site}
+          onBusyChange={setMemoryBusy}
+          onSubmitted={() => {
+            setMemorySent(true);
+            setWallKey((k) => k + 1);
+          }}
+          onBack={() => {
+            setSheet(null);
+          }}
+          onViewSaved={() => {
+            setSheet(null);
+            window.setTimeout(() => document.getElementById("wall-h")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+          }}
+        />
       </Sheet>
 
       <TranscriptSheet open={sheet === "transcript"} onClose={() => setSheet(null)} site={site} story={story} />
@@ -439,4 +473,3 @@ function Step({ n, title, icon, done, optional, children }: { n: number; title: 
     </li>
   );
 }
-

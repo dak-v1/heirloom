@@ -89,6 +89,11 @@ button {
   background: var(--terracotta-tint);
 }
 
+/* Remote photos that failed to load (offline): show the paper/accent background instead. */
+img[data-broken] {
+  visibility: hidden;
+}
+
 .visually-hidden {
   position: absolute !important;
   width: 1px !important;

@@ -2,14 +2,15 @@ import { Link } from "react-router";
 import { Check } from "lucide-react";
 import type { Site } from "../../content/types";
 import { formatDistance } from "../../services/arrival";
+import { hideBrokenImage } from "../../components/Media";
 
 /** Postage-stamp style card for a curated site. */
 export function SiteCard({ site, index, distance, visited, started }: { site: Site; index: number; distance: number | null; visited: boolean; started: boolean }) {
   const today = site.eras.find((e) => e.isToday)!;
   return (
-    <Link to={`/site/${site.slug}`} className={`site-card site-card--${site.accent}`} style={{ "--tilt": `${[-1.2, 0.8, -0.5][index % 3]}deg` } as React.CSSProperties}>
+    <Link to={`/tour/${site.slug}`} className={`site-card site-card--${site.accent}`} style={{ "--tilt": `${[-1.2, 0.8, -0.5][index % 3]}deg` } as React.CSSProperties}>
       <span className="site-card__frame perforated">
-        <img src={today.image.srcSmall ?? today.image.src} alt="" loading="lazy" referrerPolicy="no-referrer" />
+        <img src={today.image.srcSmall ?? today.image.src} alt="" loading="lazy" referrerPolicy="no-referrer" onError={hideBrokenImage} />
         <span className="site-card__no" aria-hidden="true">
           No. {String(index + 1).padStart(2, "0")}
         </span>

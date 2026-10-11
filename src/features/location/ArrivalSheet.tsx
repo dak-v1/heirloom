@@ -20,7 +20,7 @@ export function ArrivalSheet() {
   const sites = suggestion.candidates.map((c) => ({ c, site: findSite(c.siteId)! })).filter((x) => x.site);
   const go = (slug: string) => {
     clearSuggestion();
-    navigate(`/site/${slug}`, { state: { arrival: suggestion.simulated ? "simulated" : "location" } });
+    navigate(`/tour/${slug}${suggestion.simulated ? "?demo=1" : ""}`, { state: { arrival: suggestion.simulated ? "simulated" : "location" } });
   };
   const primary = sites[0]?.site;
 
@@ -43,7 +43,7 @@ export function ArrivalSheet() {
             {sites.map(({ c, site }) => (
               <li key={site.id}>
                 <button type="button" className="arrival-choice" onClick={() => go(site.slug)}>
-                  <img src={site.stamp.art} alt="" width={44} height={56} />
+                  <img src={site.eras.find((era) => era.isToday)?.image.srcSmall ?? site.eras.find((era) => era.isToday)?.image.src} alt="" width={64} height={54} />
                   <span>
                     <strong>{site.name}</strong>
                     <span className="muted">
@@ -62,13 +62,9 @@ export function ArrivalSheet() {
       ) : (
         primary && (
           <div className="arrival-one">
-            <img className="arrival-one__stamp" src={primary.stamp.art} alt="" />
+            <img className="arrival-one__photo" src={primary.eras.find((era) => era.isToday)?.image.srcSmall ?? primary.eras.find((era) => era.isToday)?.image.src} alt={primary.eras.find((era) => era.isToday)?.image.alt ?? `${primary.name} today`} />
             <div>
-              <p className="lede" style={{ fontSize: "var(--text-md)" }}>
-                {suggestion.kind === "approximate"
-                  ? "Your location is approximate, so we can't be sure. If you're there, the stories are ready for you."
-                  : "Discover the stories this place holds."}
-              </p>
+              <p className="lede" style={{ fontSize: "var(--text-md)" }}>{primary.summary}</p>
               <p className="arrival-one__meta">
                 <MapPin size={16} aria-hidden="true" /> {primary.area}
                 {!suggestion.simulated && (
@@ -86,7 +82,7 @@ export function ArrivalSheet() {
       {suggestion.kind !== "multiple" && primary && (
         <div className="arrival-actions">
           <Button size="lg" ticket block onClick={() => go(primary.slug)}>
-            {suggestion.kind === "approximate" ? "Yes, I'm here" : "Explore this place"}
+            {suggestion.kind === "approximate" ? "Yes, I'm here · Explore in 3D" : "Explore in 3D"}
           </Button>
           <Button variant="ghost" block onClick={dismissSuggestion}>
             Not now

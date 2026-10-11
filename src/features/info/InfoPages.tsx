@@ -37,7 +37,7 @@ export function AboutPage() {
         <li>Dates are shown exactly as precisely as the holding archive records them ("c. 1890", "between 1930 and 1960"). The timeline only shows eras we have photographs for.</li>
         <li>Each hotspot is marked either as a <strong>sourced fact</strong> (with a link) or as <strong>what you can see</strong> (an observation about the picture).</li>
         <li>Stories are written from the sources listed below. English is the curated version. The 中文 and Bahasa Melayu versions are draft translations prepared with AI assistance and are awaiting review by fluent community reviewers. A Tamil version is not yet available.</li>
-        <li>Narration is a synthetic voice: your device's text-to-speech, or pre-generated audio where available. Soundscapes are synthesised in your browser to suggest a mood; they are not historical recordings.</li>
+        <li>Narration is a synthetic ElevenLabs voice, not a historical recording. Soundscapes are synthesised in your browser to suggest a mood; they are not historical recordings.</li>
         <li>One game photograph (Thian Hock Keng, 1928) is identified by us, not by the archive; it is labelled as such.</li>
       </ul>
 
@@ -91,7 +91,7 @@ export function PrivacyPage() {
       <p>You can use everything without signing up. Your passport belongs to an anonymous ID created in this browser.</p>
       <h2>Your progress stays in this browser</h2>
       <p>
-        Visits, stamps, badges and game scores are saved in this browser's local storage. They are not sent to a server, and they don't sync between devices. Clearing this site's data, or using private browsing, removes them. You can also reset them from the menu.
+        Visits, stamps, badges, game scores and your profile (the name you choose, your map icon and how you arrange your badge board) are saved in this browser's local storage. They are not sent to a server, and they don't sync between devices. Clearing this site's data, or using private browsing, removes them. You can also reset them from the menu.
       </p>
       <h2>Location</h2>
       <p>
@@ -102,13 +102,19 @@ export function PrivacyPage() {
       <p>The camera is used only if you open the Live Time Window preview. The video stays on your device, is never recorded or uploaded, and stops as soon as you close the preview.</p>
       <h2>Sound</h2>
       <p>Narration and soundscapes play only after you press play. Arriving at a place never starts sound.</p>
-      <h2>Shared memories (coming next)</h2>
+      <h2>Shared memories</h2>
       <p>
-        When notes and drawings launch, anything you choose to share will be stored on our server and reviewed by a moderator before it becomes public. Pending or rejected memories are never shown to other visitors. A display name will be optional; no email is collected.
+        Leaving a photo memory, note or drawing is optional and never affects your stamp. Photos and words you submit are stored on the Heirloom server with an anonymous guest ID that this browser keeps; there is no account and no email. A display name is optional and is shown with your memory if you give one.
+      </p>
+      <p>
+        Every new memory starts as <strong>waiting for review</strong> and is not visible to anyone else. It becomes public, on that place's wall only, after a moderator approves it. Memories that are rejected or hidden are never shown publicly, and moderation reasons are never published. In this browser you can see the status of your own submissions under “Your submissions” on each place.
+      </p>
+      <p>
+        Anyone can report a public memory; a memory that is reported several times is hidden until a moderator looks at it. To limit abuse, the server limits how many memories can be shared in a short time. Some memories are written by the Heirloom team as samples for the demo and are labelled “Sample”.
       </p>
       <h2>Third parties</h2>
       <p>
-        Photographs load from Wikimedia Commons, and map tiles from OpenStreetMap. Those services receive normal web requests (such as your IP address) when your browser fetches images. The “Directions” button opens Google Maps in a new tab. If pre-generated narration is added, it will have been made in advance with ElevenLabs; your device never contacts ElevenLabs.
+        Photographs load from Wikimedia Commons, and map tiles from OpenStreetMap. Those services receive normal web requests (such as your IP address) when your browser fetches images. The “Directions” button opens Google Maps in a new tab. Narration is generated in advance with ElevenLabs; your device never contacts ElevenLabs.
       </p>
       <h2>Analytics</h2>
       <p>Heirloom keeps a small, local-only log of events such as “stamp earned”, to help us test. It contains no memory text and no location, and it is not sent anywhere.</p>
@@ -123,10 +129,12 @@ export function TermsPage() {
       <p>These are living places of worship. Dress modestly, keep your voice low, follow posted visiting times and signs, and ask before photographing people.</p>
       <h2>Sharing memories</h2>
       <ul>
-        <li>Share your own memories, notes and drawings about the place.</li>
+        <li>Share your own photos, memories, notes and drawings about the place. Ask permission before photographing people.</li>
         <li>No hate, harassment, personal information about others, advertising or anything unsafe.</li>
-        <li>Every contribution is reviewed before it appears publicly, and we may decline any submission.</li>
+        <li>Every contribution is reviewed by a moderator before it appears publicly. Moderators can approve, reject or later hide any memory, and we don't publish the reasons.</li>
         <li>Anyone can report a public memory; reported memories may be hidden while we review them.</li>
+        <li>Memories marked “Sample” were written by the Heirloom team to illustrate the wall. They are not real visitor accounts or historical sources.</li>
+        <li>Shared memories are personal impressions, not checked historical facts.</li>
       </ul>
       <h2>About the content</h2>
       <p>

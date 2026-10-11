@@ -184,6 +184,41 @@
   background: var(--olive-deep);
 }
 
+/* Placeholder demo stamps: smaller, paler pins with a Demo tag */
+.pin--demo {
+  width: 40px;
+  height: 50px;
+}
+.pin--demo .pin__stamp {
+  inset: 0 5px 10px;
+  padding: 2px;
+  opacity: 0.92;
+  transform: rotate(3deg);
+}
+.pin--demo::after {
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  background: var(--ink-muted);
+}
+.pin--demo.is-visited::after {
+  background: var(--olive-deep);
+}
+.pin__demo {
+  position: absolute;
+  left: 50%;
+  top: -7px;
+  translate: -50% 0;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--paper-light);
+  border: 1px dashed var(--ink-muted);
+  color: var(--ink-muted);
+  font: 700 8px/1.2 var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .map-hint {
   position: absolute;
   left: 50%;
@@ -281,4 +316,40 @@
   display: grid;
   gap: var(--space-2);
   margin-top: var(--space-4);
+}
+
+/* Demo stamps in the list view */
+.placelist__more {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-8) 0 var(--space-1);
+  font-size: var(--text-xl);
+}
+.placelist__more-note {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+.placelist--demo {
+  gap: var(--space-2);
+}
+.placelist__item--demo {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+.placelist__item--demo img {
+  width: 52px;
+  rotate: -3deg;
+  filter: drop-shadow(0 2px 3px rgb(45 42 35 / 0.25));
+}
+.placelist__item--demo h3 {
+  margin: 0;
+  font-size: var(--text-md);
+}
+.placelist__item--demo p {
+  margin: 2px 0 0;
+  font-size: var(--text-sm);
 }

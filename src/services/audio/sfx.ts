@@ -39,3 +39,22 @@ export function playStampThunk() {
   n.connect(lp).connect(ng).connect(c.destination);
   n.start(t);
 }
+
+/** A soft pop and a tiny chime as a badge pin pushes into the achievement board. */
+export function playPinPop() {
+  const c = getAudioContext();
+  if (!c) return;
+  const t = c.currentTime + 0.01;
+  const o = c.createOscillator();
+  const g = c.createGain();
+  o.type = "triangle";
+  o.frequency.setValueAtTime(420, t);
+  o.frequency.exponentialRampToValueAtTime(880, t + 0.06);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.16, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+  o.connect(g).connect(c.destination);
+  o.start(t);
+  o.stop(t + 0.16);
+  strikeBell(c, c.destination, 1568, HAND_BELL, t + 0.07, 0.03, 0.2);
+}

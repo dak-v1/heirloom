@@ -5,8 +5,11 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Resvg } from "@resvg/resvg-js";
-import { STAMP_SITES, postageStamp, inkImpression } from "./lib/stamps.mjs";
-import { BADGES, badgeSvg } from "./lib/badges.mjs";
+import { STAMP_SITES, DEMO_STAMP_SITES, postageStamp, inkImpression } from "./lib/stamps.mjs";
+import { PINS } from "./lib/pins.mjs";
+import { AVATARS, avatarSvg } from "./lib/avatars.mjs";
+import { miniMapSvg, sealSvg, facadeSvg } from "./lib/profile-art.mjs";
+import { skylineSketchSvg } from "./lib/skyline.mjs";
 import { markSvg, logoSvg, postmarkSvg, wavesSvg, orchidSvg, shophouseDividerSvg, stampToolSvg } from "./lib/brand.mjs";
 import { textPath, FONTS } from "./lib/fonts.mjs";
 import { P } from "./lib/palette.mjs";
@@ -27,8 +30,17 @@ for (const site of STAMP_SITES) {
   write(out("stamps", `${site.slug}-ink.svg`), inkImpression(site));
 }
 
-console.log("Badges");
-for (const badge of BADGES) write(out("badges", `${badge.id}.svg`), badgeSvg(badge));
+console.log("Demo stamps (placeholders)");
+for (const site of DEMO_STAMP_SITES) {
+  write(out("stamps", "demo", `${site.slug}.svg`), postageStamp(site));
+  write(out("stamps", "demo", `${site.slug}-ink.svg`), inkImpression(site));
+}
+
+console.log("Badges (enamel pins)");
+for (const [id, make] of Object.entries(PINS)) write(out("badges", `${id}.svg`), make());
+
+console.log("Avatars");
+for (const a of AVATARS) write(out("avatars", `${a.id}.svg`), avatarSvg(a.id));
 
 console.log("Brand");
 write(out("brand", "mark.svg"), markSvg());
@@ -48,6 +60,10 @@ write(out("decor", "waves-ink.svg"), wavesSvg({ color: P.ink }));
 write(out("decor", "orchid.svg"), orchidSvg());
 write(out("decor", "shophouses.svg"), shophouseDividerSvg());
 write(out("decor", "stamp-tool.svg"), stampToolSvg());
+write(out("decor", "mini-map.svg"), miniMapSvg());
+write(out("decor", "explorer-seal.svg"), sealSvg());
+write(out("decor", "shophouse-facade.svg"), facadeSvg());
+write(out("decor", "skyline-sketch.svg"), skylineSketchSvg());
 
 console.log("Textures");
 const paperTile = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256">

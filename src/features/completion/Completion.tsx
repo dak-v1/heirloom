@@ -8,6 +8,7 @@ import type { EarnResult } from "../../services/progress";
 import { Button, ButtonA, ButtonLink } from "../../components/Button";
 import { StampArt } from "../../components/Media";
 import { useReducedMotion } from "../../state/preferences";
+import { progress } from "../../state/progress";
 import { useGeo } from "../location/geo-context";
 import { Immersive } from "../site/PastView";
 
@@ -25,6 +26,14 @@ export function StampReward({ site, result, onPlaceLater }: { site: Site; result
   const navigate = useNavigate();
   const reduced = useReducedMotion();
   const badges = result.newBadges.map((id) => BADGE_BY_ID.get(id)).filter((b) => !!b);
+  // Already placed (a repeat visit): show it where it is rather than picking it up to move it.
+  const placed = progress.getPassportPlacements().find((p) => p.earnedStampId === result.stamp.id);
+  const openPassport = () => {
+    if (placed) {
+      progress.setCurrentPassportPage(placed.pageId);
+      navigate("/passport?book=1");
+    } else navigate(`/passport?place=${encodeURIComponent(result.stamp.id)}`);
+  };
   return (
     <Immersive label="Stamp earned" onClose={onPlaceLater}>
       <div className={`reward${reduced ? " reward--still" : ""}`}>
@@ -50,14 +59,14 @@ export function StampReward({ site, result, onPlaceLater }: { site: Site; result
           </ul>
         )}
         <div className="reward__actions">
-          <Button size="lg" ticket block onClick={() => navigate(`/passport?place=${encodeURIComponent(result.stamp.id)}`)}>
-            Stamp my passport
+          <Button size="lg" ticket block onClick={openPassport}>
+            {placed ? "See it in my passport" : "Stamp my passport"}
           </Button>
           <Button variant="secondary" block onClick={onPlaceLater}>
-            Place later
+            {placed ? "Back to this place" : "Place later"}
           </Button>
         </div>
-        <p className="reward__note">Your stamp waits in the stamp tray until you place it. Saved in this browser.</p>
+        <p className="reward__note">{placed ? "It's already pressed into your passport. Saved in this browser." : "Your stamp waits in the stamp tray until you place it. Saved in this browser."}</p>
       </div>
     </Immersive>
   );
@@ -83,7 +92,7 @@ export function NextSiteCard({ site, heading = "Next on the trail" }: { site: Si
         </div>
       </div>
       <div className="next-site__actions">
-        <ButtonLink to={`/site/${next.slug}`} iconRight={<ArrowRight size={18} />}>
+        <ButtonLink to={`/tour/${next.slug}`} iconRight={<ArrowRight size={18} />}>
           Explore {next.name}
         </ButtonLink>
         <ButtonA variant="secondary" href={directionsUrl(next)} icon={<Navigation size={16} />}>

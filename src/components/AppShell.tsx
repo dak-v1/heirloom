@@ -1,10 +1,15 @@
 import { useState, type ReactNode } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { BookOpen, Home, Map as MapIcon, Menu, MapPinned, RotateCcw } from "lucide-react";
+import { BookOpen, Camera, Home, Map as MapIcon, Menu, MapPinned, RotateCcw, Stamp, UserRound } from "lucide-react";
 import { SITES } from "../content/sites";
 import { STORY_LANGUAGES } from "../content/languages";
 import type { LangCode } from "../content/types";
-import { progress } from "../state/progress";
+import { progress, useProgress } from "../state/progress";
+import { isDemoStamp } from "../content/demo-stamps";
+import { addDemoStamps, removeDemoStamps } from "../features/passport/demoStamps";
+import { profile } from "../state/profile";
+import { forgetGuestIdentity } from "../services/memories";
+import { clearAllMemoryDrafts } from "../features/memories/draft";
 import { setPreferences, usePreferences, type MotionPref } from "../state/preferences";
 import { STATUS_LABEL, useGeo } from "../features/location/geo-context";
 import { Button, IconButton } from "./Button";
@@ -42,9 +47,17 @@ export function AppShell({ children }: { children: ReactNode }) {
             <MapIcon size={22} aria-hidden="true" />
             <span>Map</span>
           </NavLink>
+          <NavLink to="/now" className="bottomnav__item bottomnav__item--now">
+            <span className="bottomnav__now-icon"><Camera size={22} aria-hidden="true" /></span>
+            <span>Now</span>
+          </NavLink>
           <NavLink to="/passport" className="bottomnav__item">
             <BookOpen size={22} aria-hidden="true" />
             <span>Passport</span>
+          </NavLink>
+          <NavLink to="/profile" className="bottomnav__item">
+            <UserRound size={22} aria-hidden="true" />
+            <span>Profile</span>
           </NavLink>
         </nav>
       </div>
@@ -59,6 +72,7 @@ function MoreMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [confirmReset, setConfirmReset] = useState(false);
+  const hasDemoStamps = useProgress().earnedStamps.some((s) => isDemoStamp(s.siteId));
   const go = (to: string) => {
     onClose();
     navigate(to);
@@ -147,6 +161,34 @@ function MoreMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
         ))}
       </div>
       <div className="menu-row" style={{ marginTop: 12 }}>
+        {hasDemoStamps ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Stamp size={16} />}
+            onClick={() => {
+              removeDemoStamps();
+              toast({ title: "Demo stamps removed", body: "Only stamps from real visits are left." });
+            }}
+          >
+            Remove the 10 demo stamps
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Stamp size={16} />}
+            onClick={() => {
+              const n = addDemoStamps();
+              onClose();
+              toast({ title: `${n} demo stamps added`, body: "7 are already pressed into your passport; 3 wait in the stamp tray to place.", tone: "success" });
+            }}
+          >
+            Add 10 demo stamps
+          </Button>
+        )}
+      </div>
+      <div className="menu-row" style={{ marginTop: 12 }}>
         {!confirmReset ? (
           <Button variant="ghost" size="sm" icon={<RotateCcw size={16} />} onClick={() => setConfirmReset(true)}>
             Reset this browser's progress…
@@ -154,13 +196,17 @@ function MoreMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
         ) : (
           <div className="notice notice--warn" role="alert">
             <span>
-              This erases every stamp, badge and visit saved in this browser. It can't be undone.
+              This erases every stamp, placement, badge and visit saved in this browser, plus unsent memory drafts, and starts a new anonymous identity. Memories already
+              shared stay on the server for moderators. It can't be undone.
               <span className="menu-row" style={{ marginTop: 8 }}>
                 <Button
                   variant="ink"
                   size="sm"
                   onClick={() => {
                     progress.resetProgress();
+                    profile.reset();
+                    forgetGuestIdentity();
+                    clearAllMemoryDrafts();
                     setConfirmReset(false);
                     onClose();
                     toast({ title: "Progress reset", body: "This browser now has a fresh, empty passport." });
