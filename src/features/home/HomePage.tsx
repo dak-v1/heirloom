@@ -17,7 +17,8 @@ export function HomePage() {
     document.title = "Heirloom · Singapore heritage passport";
   }, []);
 
-  const earned = p.earnedStamps.length;
+  const earned = p.earnedStamps.filter((e) => findSite(e.siteId)).length;
+  const demoStamps = p.earnedStamps.length - earned;
   const unplaced = p.earnedStamps.filter((s) => !p.placements.some((pl) => pl.earnedStampId === s.id)).length;
   const inProgress = Object.entries(p.visits)
     .filter(([id, v]) => v.startedAt && !v.completedAt && findSite(id))
@@ -29,33 +30,29 @@ export function HomePage() {
   return (
     <div className="page home">
       <section className="hero fade-in" aria-labelledby="hero-h">
-        <div className="hero__stamps" aria-hidden="true">
-          {SITES.map((s, i) => (
-            <img key={s.id} src={s.stamp.art} alt="" className={`hero__stamp hero__stamp--${i}`} />
-          ))}
-          <img src="/assets/decor/postmark.svg" alt="" className="hero__postmark" />
+        <figure className="hero__plate" aria-hidden="true">
+          <img src="/assets/decor/skyline-sketch.svg" alt="" width={640} height={360} />
+          <img className="hero__postmark" src="/assets/decor/postmark-terracotta.svg" alt="" />
+        </figure>
+        <div className="hero__text">
+          <p className="kicker">Singapore heritage passport</p>
+          <h1 id="hero-h">Every street has a story.</h1>
+          <p className="hero__lede">See the past, hear the stories and collect a stamp at three heritage sites in Chinatown and Kampong Glam.</p>
+          <div className="hero__actions">
+            <ButtonLink to="/map" size="lg" ticket iconRight={<ArrowRight size={20} />}>
+              Start exploring
+            </ButtonLink>
+            <Button variant="secondary" icon={<LocateFixed size={18} />} onClick={geo.start} disabled={locating}>
+              {locating ? "Finding you…" : locOn ? "Check nearby again" : "Find places near me"}
+            </Button>
+          </div>
+          <p className="hero__loc muted" role="status">
+            {geo.message ??
+              (locOn && geo.nearest
+                ? `${STATUS_LABEL[geo.status]}. Nearest: ${geo.nearest.site.name}, ${formatDistance(geo.nearest.distance)}.`
+                : "Location is optional and only used while the app is open.")}
+          </p>
         </div>
-        <p className="kicker">A Singapore heritage passport</p>
-        <h1 id="hero-h">
-          Every street
-          <br />
-          has a story.
-        </h1>
-        <p className="lede hero__lede">See the past, hear the stories and collect a stamp at three heritage sites in Chinatown and Kampong Glam.</p>
-        <div className="hero__actions">
-          <ButtonLink to="/map" size="lg" ticket iconRight={<ArrowRight size={20} />}>
-            Start exploring
-          </ButtonLink>
-          <Button variant="secondary" icon={<LocateFixed size={18} />} onClick={geo.start} disabled={locating}>
-            {locating ? "Finding you…" : locOn ? "Check nearby again" : "Find places near me"}
-          </Button>
-        </div>
-        <p className="hero__loc muted" role="status">
-          {geo.message ??
-            (locOn && geo.nearest
-              ? `${STATUS_LABEL[geo.status]}. Nearest: ${geo.nearest.site.name}, ${formatDistance(geo.nearest.distance)}.`
-              : "Location is optional and only used while the app is open. You can always pick a place yourself.")}
-        </p>
       </section>
 
       {continueSite && (
@@ -90,7 +87,8 @@ export function HomePage() {
         <div>
           <h2 id="pp-h">My Heritage Passport</h2>
           <p className="passport-preview__count">
-            <strong>{earned}</strong> of {SITES.length} stamps earned
+            <strong>{earned}</strong> of {SITES.length} trail stamps earned
+            {demoStamps > 0 && <span className="muted"> · plus {demoStamps} demo</span>}
           </p>
           <div className="progress-bar" aria-hidden="true">
             <span style={{ width: `${(earned / SITES.length) * 100}%` }} />

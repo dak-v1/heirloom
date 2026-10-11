@@ -47,7 +47,7 @@ Optional `.env` (see `.env.example`): `HEIRLOOM_ADMIN_TOKEN` enables moderation 
 
 | Route | Purpose | Notes |
 | --- | --- | --- |
-| `/` | Home: start, find nearby, continue visit, trail cards, passport preview | |
+| `/` | Home: a pen sketch of the bay on textured paper (top right on wide screens, on top on phones), start, find nearby, continue visit, trail cards, passport preview | |
 | `/map` | Leaflet map (OSM tiles, sepia) + accessible list, "I'm here", directions, demo arrival | `?view=list`, `?site=<id>` |
 | `/site/:slug` | Visit journey (6 steps) | overlays in the URL so Back closes them: `?view=past`, `?view=live`, `?play=1` |
 | `/passport` | One 3D book throughout: the cover opens, leaves turn (page-edge tap, swipe, arrows, ← →), tap a page to zoom; in-book tray (drag a stamp onto a 3D page), free placement on the page, 3D rubber-stamp press, undo/reposition, counts, tray, and a link to the badge board. "Flat pages" (or no WebGL) switches to the 2D book. The identity page shows the profile name and icon | `?book=1` (book open), `?place=<earnedStampId>` (place that stamp) |
@@ -56,7 +56,7 @@ Optional `.env` (see `.env.example`): `HEIRLOOM_ADMIN_TOKEN` enables moderation 
 | `/admin` | Memory moderation (token in sessionStorage only) | Not linked from any menu |
 | `/dev/hotspots` | Dev-only hotspot calibration grid | Not in production builds |
 
-Global: `ArrivalSheet` (location suggestions), badge toasts, More menu (preferences: motion, sound effects, default story language; location on/off; demo tools; reset progress).
+Global: `ArrivalSheet` (location suggestions), badge toasts, More menu (preferences: motion, sound effects, default story language; location on/off; demo tools: simulate arrival, add or remove the 10 demo stamps, reset progress). Demo stamps (`src/content/demo-stamps.ts`, `features/passport/demoStamps.ts`) are placeholders: 7 are pressed onto pages and 3 wait in the tray; they're pinned on the map with a Demo tag, never count toward the trail, and never award badges. Anything that shows a stamp looks it up with `findStampPlace()`, which covers trail sites and demo stamps.
 
 ## 5. Data, identity and storage
 

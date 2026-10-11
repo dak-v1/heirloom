@@ -1,10 +1,12 @@
 import { useState, type ReactNode } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { BookOpen, Home, Map as MapIcon, Menu, MapPinned, RotateCcw, UserRound } from "lucide-react";
+import { BookOpen, Home, Map as MapIcon, Menu, MapPinned, RotateCcw, Stamp, UserRound } from "lucide-react";
 import { SITES } from "../content/sites";
 import { STORY_LANGUAGES } from "../content/languages";
 import type { LangCode } from "../content/types";
-import { progress } from "../state/progress";
+import { progress, useProgress } from "../state/progress";
+import { isDemoStamp } from "../content/demo-stamps";
+import { addDemoStamps, removeDemoStamps } from "../features/passport/demoStamps";
 import { profile } from "../state/profile";
 import { forgetGuestIdentity } from "../services/memories";
 import { clearAllMemoryDrafts } from "../features/memories/draft";
@@ -66,6 +68,7 @@ function MoreMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
   const toast = useToast();
   const [confirmReset, setConfirmReset] = useState(false);
+  const hasDemoStamps = useProgress().earnedStamps.some((s) => isDemoStamp(s.siteId));
   const go = (to: string) => {
     onClose();
     navigate(to);
@@ -152,6 +155,34 @@ function MoreMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
             Simulate arrival: {s.name}
           </Button>
         ))}
+      </div>
+      <div className="menu-row" style={{ marginTop: 12 }}>
+        {hasDemoStamps ? (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Stamp size={16} />}
+            onClick={() => {
+              removeDemoStamps();
+              toast({ title: "Demo stamps removed", body: "Only stamps from real visits are left." });
+            }}
+          >
+            Remove the 10 demo stamps
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Stamp size={16} />}
+            onClick={() => {
+              const n = addDemoStamps();
+              onClose();
+              toast({ title: `${n} demo stamps added`, body: "7 are already pressed into your passport; 3 wait in the stamp tray to place.", tone: "success" });
+            }}
+          >
+            Add 10 demo stamps
+          </Button>
+        )}
       </div>
       <div className="menu-row" style={{ marginTop: 12 }}>
         {!confirmReset ? (

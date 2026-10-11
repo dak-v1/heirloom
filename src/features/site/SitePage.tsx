@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { ArrowLeft, BookOpen, Camera, Check, History, Info, List, MapPin, MessageSquareHeart, Puzzle, Stamp } from "lucide-react";
 import { findSite } from "../../content/sites";
@@ -12,7 +12,7 @@ import { track } from "../../services/analytics";
 import { playChime } from "../../services/audio/sfx";
 import type { EarnResult } from "../../services/progress";
 import { progress, useProgress } from "../../state/progress";
-import { getPreferences } from "../../state/preferences";
+import { getPreferences, useReducedMotion } from "../../state/preferences";
 import { useSiteStory } from "../audio/useSiteStory";
 import { StoryPlayer, TranscriptSheet } from "../audio/StoryPlayer";
 import { GuessTheYear, initialGameState, type GameState } from "../game/GuessTheYear";
@@ -24,6 +24,7 @@ import { DetailsListSheet, HotspotSheet, SourcesSheet } from "./InfoSheets";
 import { hotspotKey } from "./ImageStage";
 import { PastView } from "./PastView";
 import { LiveWindow } from "./LiveWindow";
+import { useJourneyScroll } from "./useJourneyScroll";
 import "./site.css";
 
 export function SitePage() {
@@ -56,6 +57,8 @@ function SiteNotFound({ slug }: { slug?: string }) {
 type ArrivalKind = "location" | "simulated" | "manual" | undefined;
 
 function SiteExperience({ site }: { site: Site }) {
+  const journey = useRef<HTMLOListElement>(null);
+  useJourneyScroll(journey, useReducedMotion());
   const location = useLocation();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
@@ -227,7 +230,7 @@ function SiteExperience({ site }: { site: Site }) {
           </div>
         )}
 
-        <ol className="journey" aria-label="Your visit">
+        <ol className="journey" aria-label="Your visit" ref={journey}>
           <Step n={1} done={sawPast} title="See the past" icon={<History size={20} />}>
             <p>Hold the old photographs up against today's street. Pick an era and tap the numbered details.</p>
             <div className="step-actions">

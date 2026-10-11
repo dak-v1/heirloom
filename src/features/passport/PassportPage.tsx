@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router";
 import { ArrowRight, Box, BookOpen, BookOpenCheck, ChevronLeft, ChevronRight, Hand, Info, Layers, Stamp, ZoomIn, ZoomOut } from "lucide-react";
-import { SITES, findSite } from "../../content/sites";
+import { SITES, findStampPlace } from "../../content/sites";
 import { BADGES } from "../../content/badges";
 import { PASSPORT_PAGES, SPREADS, STAMPABLE_PAGE_IDS, locatePage } from "../../content/passport";
 import type { EarnedStamp } from "../../services/progress";
@@ -204,7 +204,7 @@ export function PassportPage() {
     for (const pl of p.placements) {
       if (pl.earnedStampId === draft?.earnedStampId) continue; // the ghost stands in for it while it moves
       const earned = p.earnedStamps.find((s) => s.id === pl.earnedStampId);
-      const site = findSite(earned?.siteId);
+      const site = findStampPlace(earned?.siteId);
       if (!earned || !site) continue;
       const list = byPage.get(pl.pageId) ?? [];
       list.push({ id: earned.id, site, visitDate: earned.visitDate, x: pl.x, y: pl.y, widthRatio: pl.widthRatio, rotationDeg: pl.rotationDeg, zIndex: pl.zIndex });
@@ -218,7 +218,7 @@ export function PassportPage() {
     [holder, me.avatar, p.guestId, p.createdAt, p.earnedStamps.length],
   );
 
-  const inkArtOf = (earnedStampId: string) => findSite(p.earnedStamps.find((s) => s.id === earnedStampId)?.siteId)?.stamp.inkArt;
+  const inkArtOf = (earnedStampId: string) => findStampPlace(p.earnedStamps.find((s) => s.id === earnedStampId)?.siteId)?.stamp.inkArt;
   const ghost = useMemo(() => {
     const art = draft && inkArtOf(draft.earnedStampId);
     return draft && art ? { pageId: draft.pageId, x: draft.x, y: draft.y, widthRatio: draft.widthRatio, rotationDeg: draft.rotationDeg, inkArt: art } : null;
@@ -478,7 +478,7 @@ export function PassportPage() {
         ) : (
           <ul className="tray">
             {p.earnedStamps.map((s, i) => {
-              const site = findSite(s.siteId);
+              const site = findStampPlace(s.siteId);
               if (!site) return null;
               return (
                 <li key={s.id}>
@@ -487,6 +487,7 @@ export function PassportPage() {
                     <span className="tray__name">{site.name}</span>
                     <span className="tray__date">{formatVisitDate(s.visitDate)}</span>
                     <Tag tone={isPlaced(s) ? "olive" : "mustard"}>{isPlaced(s) ? "Placed" : "Not placed yet"}</Tag>
+                    {site.demo && <Tag tone="demo">Demo stamp</Tag>}
                   </button>
                 </li>
               );
@@ -530,15 +531,24 @@ export function PassportPage() {
         </span>
       </p>
 
-      <Sheet open={!!detail} onClose={() => setDetail(null)} title={detail ? (findSite(detail.siteId)?.name ?? "Stamp") : "Stamp"}>
+      <Sheet open={!!detail} onClose={() => setDetail(null)} title={detail ? (findStampPlace(detail.siteId)?.name ?? "Stamp") : "Stamp"}>
         {detail && (
           <div className="stamp-detail">
             <div className="stamp-detail__art">
-              <StampArt src={findSite(detail.siteId)?.stamp.art ?? ""} alt={findSite(detail.siteId)?.stamp.alt ?? ""} />
-              <img className="stamp-detail__ink" src={findSite(detail.siteId)?.stamp.inkArt} alt="Ink impression version of the stamp, as it will look pressed onto a passport page." />
+              <StampArt src={findStampPlace(detail.siteId)?.stamp.art ?? ""} alt={findStampPlace(detail.siteId)?.stamp.alt ?? ""} />
+              <img className="stamp-detail__ink" src={findStampPlace(detail.siteId)?.stamp.inkArt} alt="Ink impression version of the stamp, as it will look pressed onto a passport page." />
             </div>
             <p>
-              Visited <strong>{formatVisitDate(detail.visitDate)}</strong>. {isPlaced(detail) ? "Placed in your passport." : "Waiting to be placed."}
+              {findStampPlace(detail.siteId)?.demo ? (
+                <>
+                  <Tag tone="demo">Demo stamp</Tag> A placeholder that fills the passport for demos; it isn't a trail visit.{" "}
+                </>
+              ) : (
+                <>
+                  Visited <strong>{formatVisitDate(detail.visitDate)}</strong>.{" "}
+                </>
+              )}
+              {isPlaced(detail) ? "Placed in your passport." : "Waiting to be placed."}
             </p>
             <Button
               block
@@ -551,9 +561,11 @@ export function PassportPage() {
             >
               {isPlaced(detail) ? "Move in passport" : "Place in passport"}
             </Button>
-            <ButtonLink to={`/site/${findSite(detail.siteId)?.slug}`} variant="ghost" block>
-              Revisit {findSite(detail.siteId)?.name}
-            </ButtonLink>
+            {!findStampPlace(detail.siteId)?.demo && (
+              <ButtonLink to={`/site/${findStampPlace(detail.siteId)?.slug}`} variant="ghost" block>
+                Revisit {findStampPlace(detail.siteId)?.name}
+              </ButtonLink>
+            )}
           </div>
         )}
       </Sheet>

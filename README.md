@@ -40,7 +40,7 @@ Menu (☰) → **Demo tools** → *Simulate arrival*, or Map → *Demo: simulate
 **Before the demo (5 minutes):**
 1. Check that `.env` exists with `HEIRLOOM_ADMIN_TOKEN` and `HEIRLOOM_GUEST_SECRET` (copy `.env.example`; use long random values). Restart `npm run dev` after any change.
 2. If the venue Wi-Fi is doubtful, run `npm run media:vendor` once (see [Offline prep](#offline-prep)) and restart.
-3. Open http://localhost:5173. Go to Menu ☰ → **Demo tools** → *Reset this browser's progress…* → **Erase progress**. This gives a fresh passport, a fresh memory identity and no drafts.
+3. Open http://localhost:5173. Go to Menu ☰ → **Demo tools** → *Reset this browser's progress…* → **Erase progress**. This gives a fresh passport, a fresh memory identity and no drafts. Optional: **Add 10 demo stamps** for a fuller passport and map (7 pressed in, 3 waiting in the tray; all labelled Demo).
 4. Open a second tab at **http://localhost:5173/admin**. Copy the token without showing it with `(Select-String -Path .env -Pattern '^HEIRLOOM_ADMIN_TOKEN=').Line.Split('=',2)[1] | Set-Clipboard` (PowerShell, repo root), paste it and press **Unlock moderation**. Leave this tab on *Pending*.
 5. Turn sound up. Sound effects are on by default (Menu ☰ → Preferences).
 

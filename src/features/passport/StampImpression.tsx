@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import type { Site } from "../../content/types";
+import type { StampPlace } from "../../content/types";
 import { formatVisitDate } from "../completion/Completion";
 import type { Spot } from "./placement";
 
@@ -15,7 +15,7 @@ export function spotStyle(s: Spot, zIndex?: number): CSSProperties {
 }
 
 /** The ink impression of a site stamp with the visitor's date printed in its blank band. */
-export function StampImpression({ site, visitDate, children }: { site: Site; visitDate: string; children?: ReactNode }) {
+export function StampImpression({ site, visitDate, children }: { site: StampPlace; visitDate: string; children?: ReactNode }) {
   const band = site.stamp.dateBand;
   return (
     <span className="impression__ink" style={{ color: site.stamp.ink }}>

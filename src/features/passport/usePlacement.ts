@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { PASSPORT_PAGES, STAMPABLE_PAGE_IDS } from "../../content/passport";
-import { findSite } from "../../content/sites";
+import { findStampPlace } from "../../content/sites";
 import { useToast } from "../../components/Toast";
 import { track } from "../../services/analytics";
 import { PlacementError, type StampPlacement } from "../../services/progress";
@@ -35,9 +35,9 @@ export function usePlacement({ reducedMotion }: { reducedMotion: boolean }) {
 
   const siteName = (earnedStampId: string) => {
     const s = progress.getEarnedStamps().find((e) => e.id === earnedStampId);
-    return findSite(s?.siteId)?.name ?? "Stamp";
+    return findStampPlace(s?.siteId)?.name ?? "Stamp";
   };
-  const stampArt = (earnedStampId: string) => findSite(progress.getEarnedStamps().find((e) => e.id === earnedStampId)?.siteId)?.stamp.art;
+  const stampArt = (earnedStampId: string) => findStampPlace(progress.getEarnedStamps().find((e) => e.id === earnedStampId)?.siteId)?.stamp.art;
 
   /** Choose a stamp to place (or an already-placed one to move). `at` = dropped on a page. */
   const pick = useCallback((earnedStampId: string, at?: { pageId: string; x: number; y: number }) => {

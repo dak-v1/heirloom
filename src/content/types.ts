@@ -149,6 +149,16 @@ export interface StampDesign {
   dateBand: { x: number; y: number; w: number; h: number };
 }
 
+/** Anything with a stamp in the passport: a trail site, or a placeholder demo stamp. */
+export interface StampPlace {
+  id: string;
+  slug: string;
+  name: string;
+  stamp: StampDesign;
+  /** A placeholder for demos: not on the trail and has no visit page. */
+  demo?: boolean;
+}
+
 export interface LocalName {
   text: string;
   lang: string;

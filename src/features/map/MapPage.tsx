@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { ArrowRight, List, LocateFixed, Map as MapIcon, MapPin, Navigation, PersonStanding, X } from "lucide-react";
+import { ArrowRight, BookOpen, List, LocateFixed, Map as MapIcon, MapPin, Navigation, PersonStanding, X } from "lucide-react";
 import { SITES, findSite } from "../../content/sites";
 import { Button, ButtonA, IconButton } from "../../components/Button";
 import { Sheet } from "../../components/Sheet";
@@ -9,6 +9,7 @@ import { formatDistance } from "../../services/arrival";
 import { useProgress } from "../../state/progress";
 import { useProfile } from "../../state/profile";
 import { findAvatar } from "../../content/avatars";
+import { DEMO_PLACES, type DemoPlace } from "../../content/demo-stamps";
 import { STATUS_LABEL, useGeo } from "../location/geo-context";
 import { directionsUrl } from "../completion/Completion";
 import { LeafletMap } from "./LeafletMap";
@@ -24,6 +25,7 @@ export function MapPage() {
   const [demoOpen, setDemoOpen] = useState(false);
   const mode = params.get("view") === "list" || tilesFailed ? "list" : "map";
   const selected = findSite(params.get("site"));
+  const selectedDemo = DEMO_PLACES.find((d) => d.id === params.get("site"));
   const visited = useMemo(() => new Set(p.earnedStamps.map((s) => s.siteId)), [p.earnedStamps]);
 
   useEffect(() => {
@@ -77,7 +79,7 @@ export function MapPage() {
 
       {mode === "map" ? (
         <div className="mappage__map">
-          <LeafletMap sites={SITES} selectedId={selected?.id ?? null} visited={visited} onSelect={select} fix={locOn ? geo.fix : null} meArt={findAvatar(me.avatar).art} onTilesFailed={() => setTilesFailed(true)} />
+          <LeafletMap sites={SITES} demoPlaces={DEMO_PLACES} selectedId={selected?.id ?? selectedDemo?.id ?? null} visited={visited} onSelect={select} fix={locOn ? geo.fix : null} meArt={findAvatar(me.avatar).art} onTilesFailed={() => setTilesFailed(true)} />
           {selected ? (
             <section className="map-panel card" aria-labelledby="map-panel-h">
               <IconButton label="Close place details" className="map-panel__close" onClick={() => select(null)}>
@@ -107,6 +109,8 @@ export function MapPage() {
                 </ButtonA>
               </div>
             </section>
+          ) : selectedDemo ? (
+            <DemoPanel place={selectedDemo} collected={visited.has(selectedDemo.id)} onClose={() => select(null)} onPassport={() => navigate("/passport")} />
           ) : (
             <p className="map-hint">
               <MapPin size={16} aria-hidden="true" /> Tap a stamp to see the place, or switch to the list.
@@ -150,6 +154,23 @@ export function MapPage() {
               );
             })}
           </ol>
+          <h2 className="placelist__more">
+            More stamps <Tag tone="demo">Demo</Tag>
+          </h2>
+          <p className="muted placelist__more-note">Placeholder stamps that fill the passport for demos. They aren't on the trail yet, so there's no visit to explore.</p>
+          <ul className="placelist placelist--demo">
+            {DEMO_PLACES.map((d) => (
+              <li key={d.id} className="placelist__item placelist__item--demo card card--flat">
+                <img src={d.stamp.art} alt="" />
+                <div>
+                  <p className="label">{d.area}</p>
+                  <h3>{d.name}</h3>
+                  <p className="muted">{d.note}</p>
+                  {visited.has(d.id) && <Tag tone="olive">In your passport</Tag>}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -198,5 +219,39 @@ export function MapPage() {
         </div>
       </Sheet>
     </div>
+  );
+}
+
+/** Details for a placeholder demo stamp: no visit to start, but you can see where it is. */
+function DemoPanel({ place, collected, onClose, onPassport }: { place: DemoPlace; collected: boolean; onClose: () => void; onPassport: () => void }) {
+  return (
+    <section className="map-panel card" aria-labelledby="map-panel-h">
+      <IconButton label="Close place details" className="map-panel__close" onClick={onClose}>
+        <X size={20} />
+      </IconButton>
+      <div className="map-panel__head">
+        <img src={place.stamp.art} alt="" />
+        <div>
+          <p className="label">{place.area}</p>
+          <h2 id="map-panel-h">{place.name}</h2>
+          <p className="muted map-panel__meta">
+            <Tag tone="demo">Demo stamp</Tag> {collected && <Tag tone="olive">In your passport</Tag>}
+          </p>
+        </div>
+      </div>
+      <p className="map-panel__summary">
+        {place.note} It's a placeholder stamp for demos and isn't on the trail yet.
+      </p>
+      <div className="map-panel__actions">
+        {collected && (
+          <Button variant="secondary" icon={<BookOpen size={16} />} onClick={onPassport}>
+            See it in my passport
+          </Button>
+        )}
+        <ButtonA variant="ghost" href={`https://www.google.com/maps/dir/?api=1&destination=${place.coords.lat},${place.coords.lng}&travelmode=walking`} icon={<Navigation size={16} />}>
+          Directions
+        </ButtonA>
+      </div>
+    </section>
   );
 }

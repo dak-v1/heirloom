@@ -12,7 +12,7 @@ A mobile-first, no-install web app (React 19 + Vite; Express 5 + SQLite API) for
 
 | Route | What it is |
 | --- | --- |
-| `/` | Home: Start exploring, Find places near me, Continue your visit, trail cards, passport preview |
+| `/` | Home: a pen-and-ink sketch of the bay on textured paper, Start exploring, Find places near me, Continue your visit, trail cards, passport preview |
 | `/map` | Leaflet/OSM map plus an accessible list, "I'm here", directions and a labelled demo arrival (`?view=list`, `?site=<id>`) |
 | `/site/:slug` | The visit, as six steps: see the past, listen or read, explore details, play (optional), leave a memory (optional), finish. Then the stamp reward and next-site card. Overlays live in the URL so Back closes them: `?view=past` (Past View), `?view=live` (camera overlay preview), `?play=1` (Guess the Year). Sheets cover modes, transcript, sources, all details, hotspot detail and the memory composer. The memory wall is on the page |
 | `/passport` | A 3D leather passport (three.js) used for the whole flow (`?book=1`). The cover opens and 4 leaves (8 pages) turn with a paper curl when you tap a page edge, swipe, use the arrows or press ← →. The camera zooms onto one page for stamping: drag a stamp from the in-book tray onto the 3D page, then drag, rotate and resize it there; a 3D rubber stamp presses the impression in. Undo and reposition, counts, a stamp tray and a link to the badge board. "Flat pages" (or no WebGL) shows the 2D book instead. `?place=<earnedStampId>` opens straight into placing that stamp |
@@ -21,7 +21,7 @@ A mobile-first, no-install web app (React 19 + Vite; Express 5 + SQLite API) for
 | `/admin` | Protected moderation queue for memories. Lazy-loaded and linked from no menu |
 | `/dev/hotspots` | Hotspot calibration. Development builds only |
 
-Global elements: the arrival sheet, badge toasts, and a More menu with preferences (motion, sound effects, story language), location on/off, demo tools (simulate arrival, reset) and the secondary pages.
+Global elements: the arrival sheet, badge toasts, and a More menu with preferences (motion, sound effects, story language), location on/off, demo tools (simulate arrival, add or remove 10 placeholder demo stamps, reset) and the secondary pages. Demo stamps are labelled as such in the tray, the passport and on the map, where they're pinned at their real locations.
 
 ## 2. GPS arrival: how it works and what was tested
 

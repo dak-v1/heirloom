@@ -129,3 +129,30 @@ describe("placements (storage contract for the Stage 2 passport)", () => {
     }
   });
 });
+
+describe("demo stamps", () => {
+  it("adds placeholder stamps once, pressing the ones with a page straight in", () => {
+    const { svc } = setup();
+    svc.earnStamp("thian-hock-keng");
+    const added = svc.addDemoStamps([
+      { siteId: "demo-lau-pa-sat", visitDate: "2026-09-01", placement: { pageId: "p2", x: 0.5, y: 0.45, widthRatio: 0.38, rotationDeg: -8 } },
+      { siteId: "demo-merlion-park", visitDate: "2026-09-02" },
+    ]);
+    expect(added).toBe(2);
+    expect(svc.addDemoStamps([{ siteId: "demo-lau-pa-sat", visitDate: "2026-09-01" }])).toBe(0);
+    expect(svc.getEarnedStamps()).toHaveLength(3);
+    expect(svc.getPassportPlacements()).toHaveLength(1);
+    expect(svc.getUnplacedStamps().map((s) => s.siteId).sort()).toEqual(["demo-merlion-park", "thian-hock-keng"]);
+    expect(Object.keys(svc.getVisitorProgress().badges)).toEqual(["first-footsteps"]);
+  });
+
+  it("removes only the demo stamps and their placements", () => {
+    const { svc } = setup();
+    const real = svc.earnStamp("sultan-mosque").stamp;
+    svc.saveStampPlacement(real.id, { pageId: "p1", x: 0.5, y: 0.5, widthRatio: 0.38, rotationDeg: 0 });
+    svc.addDemoStamps([{ siteId: "demo-fort-canning", visitDate: "2026-09-01", placement: { pageId: "p1", x: 0.3, y: 0.3, widthRatio: 0.38, rotationDeg: 0 } }]);
+    svc.removeDemoStamps(["demo-fort-canning"]);
+    expect(svc.getEarnedStamps().map((s) => s.siteId)).toEqual(["sultan-mosque"]);
+    expect(svc.getPassportPlacements().map((p) => p.earnedStampId)).toEqual([real.id]);
+  });
+});

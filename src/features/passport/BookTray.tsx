@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { STAMPABLE_PAGE_IDS } from "../../content/passport";
-import { findSite } from "../../content/sites";
+import { findStampPlace } from "../../content/sites";
 import type { EarnedStamp, StampPlacement } from "../../services/progress";
 import { StampArt } from "../../components/Media";
 import { pointToPage } from "./placement";
@@ -77,7 +77,7 @@ export function BookTray({ earned, placements, selectedId, onPick, resolveDrop =
   };
 
   const item = (s: EarnedStamp, isPlaced: boolean) => {
-    const site = findSite(s.siteId);
+    const site = findStampPlace(s.siteId);
     if (!site) return null;
     return (
       <li key={s.id}>
@@ -102,7 +102,7 @@ export function BookTray({ earned, placements, selectedId, onPick, resolveDrop =
     );
   };
 
-  const draggedSite = dragging ? findSite(earned.find((s) => s.id === dragging.id)?.siteId) : null;
+  const draggedSite = dragging ? findStampPlace(earned.find((s) => s.id === dragging.id)?.siteId) : null;
 
   return (
     <div className="book-tray">

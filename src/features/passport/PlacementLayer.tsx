@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { RotateCw, Trash2 } from "lucide-react";
 import type { PassportPage } from "../../content/passport";
-import { findSite } from "../../content/sites";
+import { findStampPlace } from "../../content/sites";
 import type { EarnedStamp, StampPlacement } from "../../services/progress";
 import { IconButton } from "../../components/Button";
 import { NUDGE_STEP, ROTATE_STEP, SIZE_STEP, moveTo, nudge, overlapsAny, pointToPage, resize, rotate } from "./placement";
@@ -39,7 +39,7 @@ export function PlacementLayer({ page, interactive, placements, earned, api }: P
 
   const siteOf = (earnedStampId: string) => {
     const e = earned.find((s) => s.id === earnedStampId);
-    return e ? { stamp: e, site: findSite(e.siteId) } : null;
+    return e ? { stamp: e, site: findStampPlace(e.siteId) } : null;
   };
   const here = placements.filter((p) => p.pageId === page.id && !(interactive && p.earnedStampId === draft?.earnedStampId)).sort((a, b) => a.zIndex - b.zIndex);
 

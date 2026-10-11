@@ -2,12 +2,12 @@
 // (identity page) and every stamp impression, at its saved normalised spot.
 import * as THREE from "three";
 import { STAMP_ASPECT } from "../../../content/passport";
-import type { Site } from "../../../content/types";
+import type { StampPlace } from "../../../content/types";
 import { formatVisitDate } from "../../completion/Completion";
 
 export interface InkStamp {
   id: string;
-  site: Site;
+  site: StampPlace;
   visitDate: string;
   x: number;
   y: number;

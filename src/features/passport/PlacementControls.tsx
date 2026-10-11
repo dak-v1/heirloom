@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Minus, Plus, RotateCcw, RotateCw, Stamp, Trash2, X, ZoomIn, ZoomOut } from "lucide-react";
 import { PASSPORT_PAGES, STAMP_WIDTH } from "../../content/passport";
-import { findSite } from "../../content/sites";
+import { findStampPlace } from "../../content/sites";
 import { progress } from "../../state/progress";
 import { Button, IconButton } from "../../components/Button";
 import { NUDGE_STEP, ROTATE_STEP, SIZE_STEP, describeSpot, nudge, resize, rotate } from "./placement";
@@ -35,7 +35,7 @@ export function PlacementControls({ api, onScreen, zoomed, onToggleZoom }: Props
 
   if (!draft) return <p className="visually-hidden" aria-live="polite">{pressing ? "Stamped." : ""}</p>;
 
-  const site = findSite(progress.getEarnedStamps().find((s) => s.id === draft.earnedStampId)?.siteId);
+  const site = findStampPlace(progress.getEarnedStamps().find((s) => s.id === draft.earnedStampId)?.siteId);
   const busy = !!pressing;
 
   return (

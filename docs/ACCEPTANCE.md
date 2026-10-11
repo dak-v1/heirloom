@@ -8,7 +8,7 @@ Checked against `docs/Singapore_Reimagined_Final_Build_Prompt.md` §12 on **10 O
 
 | Key | Meaning |
 | --- | --- |
-| **U** | Unit/API tests: `npm test`, 64 passing (adds leaf-curl, 3D-layout, free-spot, profile and badge-board tests) |
+| **U** | Unit/API tests: `npm test`, 66 passing (adds leaf-curl, 3D-layout, free-spot, profile, badge-board and demo-stamp tests) |
 | **A** | API and route smoke test against the production build (`npm run build` then `node server/index.mjs`), run in Stage 4 |
 | **S1** | Browser test by Perynn at the Stage 1 handoff (built-in Chromium, 375 × 812, plus 320 and desktop) |
 | **S2** | Browser test by the Stage 2 teammate after each Stage 2 step (desktop Chromium with device emulation and touch emulation at 320/375/430 and a wide window) |
