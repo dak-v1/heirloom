@@ -106,6 +106,10 @@ export function NowPage() {
     if (videoRef.current) videoRef.current.srcObject = stream;
     setCameraReady(false);
     return () => stream?.getTracks().forEach((track) => track.stop());
+  }, [stream]);
+
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.srcObject = stream;
   }, [stream, timeWindowOpen]);
 
   const startCamera = useCallback(async () => {
@@ -192,7 +196,7 @@ export function NowPage() {
     setPanorama(null);
     setFrameError(null);
     setStep("capture");
-    if (!stream) void startCamera();
+    if (!stream && !cameraStarting) void startCamera();
   };
 
   const useSitePhoto = () => {
@@ -256,7 +260,7 @@ export function NowPage() {
           : "No nearby GPS match yet · choose a place or try the demo";
 
   if (timeWindowOpen) {
-    return <main className={`now-time-window now-time-window--${site.accent}`} aria-label="Past and present camera view">
+    return <div className={`now-time-window now-time-window--${site.accent}`} role="region" aria-label="Past and present camera view">
       <section className="now-time-window__past" aria-label={`Archival view of ${site.name}`}>
         <img src={selectedEra?.image.src ?? presentEra.image.src} alt={`${site.name}, archival view from ${selectedEra?.image.dateLabel ?? "the past"}`} />
       </section>
@@ -270,7 +274,7 @@ export function NowPage() {
         <IconButton label="Back to camera" variant="dark" onClick={() => setTimeWindowOpen(false)}><ArrowLeft size={21} /></IconButton>
         <IconButton label="Continue to the archive and 3D tour" variant="dark" onClick={continueFromTimeWindow}><ChevronRight size={22} /></IconButton>
       </div>
-    </main>;
+    </div>;
   }
 
   return (
