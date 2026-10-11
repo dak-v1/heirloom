@@ -151,7 +151,7 @@ export function BadgeBoard({ onOpen }: { onOpen: (badgeId: string) => void }) {
           <div className="board__empty">
             <p>Your first badge will be pinned here.</p>
             {earned.length === 0 && (
-              <ButtonLink to={`/site/${firstSite.slug}`} size="sm" iconRight={<ArrowRight size={16} />}>
+              <ButtonLink to={`/tour/${firstSite.slug}`} size="sm" iconRight={<ArrowRight size={16} />}>
                 Start at {firstSite.name}
               </ButtonLink>
             )}

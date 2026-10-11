@@ -9,13 +9,15 @@ export interface Stroke {
 }
 
 export interface MemoryDraftState {
-  tab: "note" | "draw";
+  tab: "note" | "draw" | "photo";
   text: string;
   name: string;
+  title: string;
+  photo: string;
   strokes: Stroke[];
 }
 
-const EMPTY: MemoryDraftState = { tab: "note", text: "", name: "", strokes: [] };
+const EMPTY: MemoryDraftState = { tab: "photo", text: "", name: "", title: "", photo: "", strokes: [] };
 const key = (siteId: string) => `heirloom:memory-draft:${siteId}`;
 
 function load(siteId: string): MemoryDraftState {
@@ -30,7 +32,7 @@ function load(siteId: string): MemoryDraftState {
 
 function save(siteId: string, d: MemoryDraftState) {
   try {
-    if (d.text || d.name || d.strokes.length) sessionStorage.setItem(key(siteId), JSON.stringify(d));
+    if (d.text || d.name || d.title || d.photo || d.strokes.length) sessionStorage.setItem(key(siteId), JSON.stringify(d));
     else sessionStorage.removeItem(key(siteId));
   } catch {
     /* quota or blocked: the draft still lives in memory for this visit */

@@ -44,7 +44,7 @@ export function MapPage() {
     else next.delete("view");
     setParams(next, { replace: true });
   };
-  const imHere = (slug: string) => navigate(`/site/${slug}`, { state: { arrival: "manual" } });
+  const imHere = (slug: string) => navigate(`/tour/${slug}`, { state: { arrival: "manual" } });
   const locOn = geo.status === "active" || geo.status === "approximate";
 
   return (
@@ -101,7 +101,7 @@ export function MapPage() {
                 <Button ticket icon={<PersonStanding size={18} />} onClick={() => imHere(selected.slug)}>
                   I'm here
                 </Button>
-                <Button variant="secondary" iconRight={<ArrowRight size={16} />} onClick={() => navigate(`/site/${selected.slug}`)}>
+                <Button variant="secondary" iconRight={<ArrowRight size={16} />} onClick={() => navigate(`/tour/${selected.slug}`)}>
                   Explore
                 </Button>
                 <ButtonA variant="ghost" href={directionsUrl(selected)} icon={<Navigation size={16} />}>
@@ -143,7 +143,7 @@ export function MapPage() {
                     <Button ticket icon={<PersonStanding size={18} />} onClick={() => imHere(s.slug)}>
                       I'm here
                     </Button>
-                    <Button variant="secondary" onClick={() => navigate(`/site/${s.slug}`)} iconRight={<ArrowRight size={16} />}>
+                    <Button variant="secondary" onClick={() => navigate(`/tour/${s.slug}`)} iconRight={<ArrowRight size={16} />}>
                       Explore
                     </Button>
                     <ButtonA variant="ghost" href={directionsUrl(s)} icon={<Navigation size={16} />}>

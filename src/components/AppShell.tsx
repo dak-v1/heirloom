@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { BookOpen, Home, Map as MapIcon, Menu, MapPinned, RotateCcw, Stamp, UserRound } from "lucide-react";
+import { BookOpen, Camera, Home, Map as MapIcon, Menu, MapPinned, RotateCcw, Stamp, UserRound } from "lucide-react";
 import { SITES } from "../content/sites";
 import { STORY_LANGUAGES } from "../content/languages";
 import type { LangCode } from "../content/types";
@@ -46,6 +46,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <NavLink to="/map" className="bottomnav__item">
             <MapIcon size={22} aria-hidden="true" />
             <span>Map</span>
+          </NavLink>
+          <NavLink to="/now" className="bottomnav__item bottomnav__item--now">
+            <span className="bottomnav__now-icon"><Camera size={22} aria-hidden="true" /></span>
+            <span>Now</span>
           </NavLink>
           <NavLink to="/passport" className="bottomnav__item">
             <BookOpen size={22} aria-hidden="true" />

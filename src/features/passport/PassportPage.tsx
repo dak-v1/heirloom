@@ -470,7 +470,7 @@ export function PassportPage() {
               Finish exploring any site to earn one. Games and memories are optional.
             </p>
             {firstUnvisited && (
-              <ButtonLink to={`/site/${firstUnvisited.slug}`} ticket iconRight={<ArrowRight size={18} />}>
+              <ButtonLink to={`/tour/${firstUnvisited.slug}`} ticket iconRight={<ArrowRight size={18} />}>
                 Start at {firstUnvisited.name}
               </ButtonLink>
             )}
@@ -496,7 +496,7 @@ export function PassportPage() {
         )}
         {firstUnvisited && p.earnedStamps.length > 0 && (
           <p className="tray__next">
-            Next stamp: <ButtonLink variant="ghost" size="sm" to={`/site/${firstUnvisited.slug}`} iconRight={<ArrowRight size={14} />}>{firstUnvisited.name}</ButtonLink>
+            Next stamp: <ButtonLink variant="ghost" size="sm" to={`/tour/${firstUnvisited.slug}`} iconRight={<ArrowRight size={14} />}>{firstUnvisited.name}</ButtonLink>
           </p>
         )}
       </section>
@@ -562,7 +562,7 @@ export function PassportPage() {
               {isPlaced(detail) ? "Move in passport" : "Place in passport"}
             </Button>
             {!findStampPlace(detail.siteId)?.demo && (
-              <ButtonLink to={`/site/${findStampPlace(detail.siteId)?.slug}`} variant="ghost" block>
+              <ButtonLink to={`/tour/${findStampPlace(detail.siteId)?.slug}`} variant="ghost" block>
                 Revisit {findStampPlace(detail.siteId)?.name}
               </ButtonLink>
             )}

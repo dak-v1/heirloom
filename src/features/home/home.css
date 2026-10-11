@@ -1,8 +1,8 @@
-/* Hero: a pen sketch on textured paper, then a short welcome. Phones stack it; wider screens set the sketch top right. */
+/* Hero: a larger pen sketch that draws itself into the same paper wash as the welcome copy. */
 .hero {
   display: grid;
   grid-template-areas: "plate" "text";
-  gap: var(--space-4);
+  gap: 0;
   padding: var(--space-3) 0 var(--space-2);
 }
 .hero__plate {
@@ -31,8 +31,8 @@
   width: 100%;
   height: auto;
   aspect-ratio: 16 / 9;
-  scale: 1.14;
-  translate: 0 2%;
+  scale: 1.24;
+  translate: 0 1.5%;
   mix-blend-mode: multiply;
 }
 .hero__postmark {
@@ -47,8 +47,16 @@
 }
 .hero__text {
   grid-area: text;
+  position: relative;
+  z-index: 1;
   min-width: 0;
+  margin-top: -106px;
+  padding: 54px 10px 0;
+  background: linear-gradient(180deg, rgb(243 236 221 / 0) 0%, rgb(243 236 221 / .92) 70px, var(--paper) 128px);
 }
+.hero__text .kicker,
+.hero__text h1,
+.hero__text .hero__lede { text-shadow: 0 1px 9px var(--paper), 0 0 20px var(--paper); }
 .hero h1 {
   max-width: 13ch;
   margin-top: var(--space-2);
@@ -80,15 +88,19 @@
 }
 @media (min-width: 600px) {
   .hero {
-    grid-template-areas: "text plate";
-    grid-template-columns: 1fr 1.05fr;
+    grid-template-areas: "plate" "text";
+    grid-template-columns: 1fr;
     align-items: start;
-    gap: var(--space-5);
     padding-top: var(--space-6);
   }
   .hero__plate {
-    rotate: 1.5deg;
     margin-top: var(--space-2);
+  }
+  .hero__text {
+    width: min(100%, 560px);
+    margin-top: -126px;
+    padding: 68px 18px 0;
+    background: linear-gradient(180deg, rgb(243 236 221 / 0) 0%, rgb(243 236 221 / .94) 78px, var(--paper) 142px);
   }
   .hero__actions {
     display: flex;

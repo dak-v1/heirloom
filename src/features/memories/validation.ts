@@ -3,6 +3,8 @@
 
 export const NOTE_MAX = 500;
 export const NAME_MAX = 40;
+export const TITLE_MAX = 80;
+export const PHOTO_MAX_BYTES = 400 * 1024;
 export const DRAWING_MAX_SIDE = 1200;
 export const DRAWING_MAX_BYTES = 350 * 1024;
 
@@ -11,6 +13,10 @@ export const charCount = (s: string) => [...s].length;
 
 export function validateName(name: string): string | null {
   return charCount(name.trim()) > NAME_MAX ? `Keep your name under ${NAME_MAX} characters.` : null;
+}
+
+export function validateTitle(title: string): string | null {
+  return charCount(title.trim()) > TITLE_MAX ? `Keep the title under ${TITLE_MAX} characters.` : null;
 }
 
 export function validateNote(text: string, name = ""): string | null {

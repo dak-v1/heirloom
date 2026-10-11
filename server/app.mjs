@@ -75,7 +75,7 @@ export function createApp({
     });
     next();
   });
-  app.use("/api", express.json({ limit: "600kb" }));
+  app.use("/api", express.json({ limit: "800kb" }));
   app.use("/api", (req, res, next) => {
     res.set("Cache-Control", "no-store");
     next();
@@ -125,9 +125,18 @@ export function createApp({
 
   app.get("/api/memories/:id/drawing.png", (req, res) => {
     const row = memories.getDrawing(req.params.id);
-    if (!row || !row.drawing || (row.status !== "approved" && !isAdmin(req))) return res.status(404).end();
-    res.set({ "Content-Type": "image/png", "Content-Security-Policy": "default-src 'none'", "Cache-Control": "public, max-age=300" });
+    const guestId = verifyGuest(req);
+    if (!row || !row.drawing || (row.status !== "approved" && !isAdmin(req) && guestId !== row.guest_id)) return res.status(404).end();
+    res.set({ "Content-Type": "image/png", "Content-Security-Policy": "default-src 'none'", "Cache-Control": row.status === "approved" ? "public, max-age=300" : "private, no-store" });
     res.send(Buffer.from(row.drawing));
+  });
+
+  app.get("/api/memories/:id/photo", (req, res) => {
+    const row = memories.getPhoto(req.params.id);
+    const guestId = verifyGuest(req);
+    if (!row || !row.photo || (row.status !== "approved" && !isAdmin(req) && guestId !== row.guest_id)) return res.status(404).end();
+    res.set({ "Content-Type": row.photo_mime || "image/jpeg", "Content-Security-Policy": "default-src 'none'", "Cache-Control": row.status === "approved" ? "public, max-age=300" : "private, no-store" });
+    res.send(Buffer.from(row.photo));
   });
 
   app.post("/api/memories/:id/report", (req, res) => {

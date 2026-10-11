@@ -48,3 +48,8 @@
 .arrival-choice strong {
   font-family: var(--font-display);
 }
+.arrival-one { align-items: flex-start; }
+.arrival-one__photo { width: 112px; height: 122px; flex: none; object-fit: cover; border: 5px solid var(--paper-light); border-radius: 8px; box-shadow: var(--shadow-paper); }
+.arrival-one .lede { margin: 0; }
+.arrival-choice img { flex: none; object-fit: cover; border: 3px solid var(--paper-light); border-radius: 5px; box-shadow: 0 1px 5px rgb(40 30 15 / .2); }
+@media (max-width: 440px) { .arrival-one__photo { width: 88px; height: 104px; } }

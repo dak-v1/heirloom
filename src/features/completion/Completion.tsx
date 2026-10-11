@@ -92,7 +92,7 @@ export function NextSiteCard({ site, heading = "Next on the trail" }: { site: Si
         </div>
       </div>
       <div className="next-site__actions">
-        <ButtonLink to={`/site/${next.slug}`} iconRight={<ArrowRight size={18} />}>
+        <ButtonLink to={`/tour/${next.slug}`} iconRight={<ArrowRight size={18} />}>
           Explore {next.name}
         </ButtonLink>
         <ButtonA variant="secondary" href={directionsUrl(next)} icon={<Navigation size={16} />}>

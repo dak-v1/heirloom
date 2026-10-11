@@ -1,8 +1,5 @@
-// Story narration with two honest modes:
-//  - "file":   prepared audio (e.g. pre-generated with ElevenLabs by scripts/generate-narration.mjs),
-//              listed in /audio/narration/manifest.json and labelled as a synthetic voice;
-//  - "speech": the device's own text-to-speech voice (Web Speech API), labelled as such.
-// Playback only ever starts from a user gesture.
+// Story narration uses prepared ElevenLabs audio listed in
+// /audio/narration/manifest.json. Playback only ever starts from a user gesture.
 
 import type { LangCode } from "../../content/types";
 
@@ -20,7 +17,7 @@ export interface NarrationTrack {
 
 export interface NarrationSnapshot {
   status: NarrationStatus;
-  mode: "file" | "speech" | null;
+  mode: "file" | null;
   trackKey: string | null;
   /** 0–1 */
   progress: number;
@@ -28,6 +25,8 @@ export interface NarrationSnapshot {
   duration: number;
   segment: number;
   segmentCount: number;
+  /** Sentence currently being spoken, also used for the tour's in-scene captions. */
+  currentSentence: string;
   voiceLabel: string | null;
   message: string | null;
 }
@@ -41,6 +40,7 @@ const IDLE: NarrationSnapshot = {
   duration: 0,
   segment: 0,
   segmentCount: 0,
+  currentSentence: "",
   voiceLabel: null,
   message: null,
 };
@@ -59,32 +59,15 @@ function splitSentences(paragraphs: string[]): string[] {
   return out;
 }
 
+/** A concise, language-matched audio preview made from the first line of a story. */
+export function storySummaryParagraphs(version: { title: string; paragraphs: string[] }): string[] {
+  const firstSentence = splitSentences([version.paragraphs[0] ?? ""])[0] ?? version.title;
+  return [`${version.title}.`, firstSentence];
+}
+
 function estimateSeconds(text: string, lang: LangCode): number {
   if (lang === "zh") return Math.max(1, text.replace(/\s/g, "").length / 4.2);
   return Math.max(1, text.split(/\s+/).length / WORDS_PER_SECOND);
-}
-
-function waitForVoices(timeoutMs = 1200): Promise<SpeechSynthesisVoice[]> {
-  const synth = window.speechSynthesis;
-  const now = synth.getVoices();
-  if (now.length) return Promise.resolve(now);
-  return new Promise((resolve) => {
-    const done = () => resolve(synth.getVoices());
-    synth.addEventListener("voiceschanged", done, { once: true });
-    window.setTimeout(done, timeoutMs);
-  });
-}
-
-function pickVoice(voices: SpeechSynthesisVoice[], bcp47: string): SpeechSynthesisVoice | null {
-  const want = bcp47.toLowerCase();
-  const base = want.split("-")[0];
-  const norm = (v: SpeechSynthesisVoice) => v.lang.toLowerCase().replace("_", "-");
-  return (
-    voices.find((v) => norm(v) === want) ??
-    voices.find((v) => norm(v).startsWith(base + "-") && v.localService) ??
-    voices.find((v) => norm(v).startsWith(base + "-") || norm(v) === base) ??
-    null
-  );
 }
 
 export class NarrationPlayer {
@@ -94,9 +77,7 @@ export class NarrationPlayer {
   private audio: HTMLAudioElement | null = null;
   private sentences: string[] = [];
   private sentenceSeconds: number[] = [];
-  private voice: SpeechSynthesisVoice | null = null;
   private generation = 0;
-  private tick: number | null = null;
   onComplete: ((track: NarrationTrack) => void) | null = null;
   onPlayingChange: ((playing: boolean) => void) | null = null;
 
@@ -117,13 +98,9 @@ export class NarrationPlayer {
     this.listeners.forEach((l) => l());
   }
 
-  static speechSupported() {
-    return typeof window !== "undefined" && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
-  }
-
   /** Prepare a track. Cheap; does not start playback. */
   async load(track: NarrationTrack) {
-    if (this.track?.key === track.key && this.snap.status !== "error") return;
+    if (this.track?.key === track.key && this.track.audio?.url === track.audio?.url && this.snap.status !== "error") return;
     this.stop();
     this.track = track;
     const gen = ++this.generation;
@@ -137,63 +114,45 @@ export class NarrationPlayer {
       a.src = track.audio.url;
       this.audio = a;
       a.addEventListener("loadedmetadata", () => gen === this.generation && this.set({ duration: a.duration || track.audio?.duration || estimate }));
-      a.addEventListener("timeupdate", () => gen === this.generation && this.set({ elapsed: a.currentTime, progress: a.duration ? a.currentTime / a.duration : 0 }));
+      a.addEventListener("timeupdate", () => {
+        if (gen !== this.generation) return;
+        const duration = a.duration || track.audio?.duration || estimate;
+        const segment = this.segmentAt(a.currentTime, duration);
+        this.set({ elapsed: a.currentTime, progress: duration ? a.currentTime / duration : 0, segment, currentSentence: this.sentences[segment] ?? "" });
+      });
       a.addEventListener("ended", () => gen === this.generation && this.finish());
       a.addEventListener("error", () => {
         if (gen !== this.generation) return;
-        // Prepared audio failed: fall back to the device voice (clearly relabelled) or the transcript.
         this.audio = null;
-        void this.prepareSpeech(track, gen, estimate, "The prepared recording could not be loaded. ");
+        this.set({ status: "unsupported", mode: null, message: "The ElevenLabs recording could not be loaded. Please read the transcript." });
       });
-      this.set({ ...IDLE, status: "ready", mode: "file", trackKey: track.key, duration: track.audio.duration ?? estimate, voiceLabel: track.audio.label, segmentCount: this.sentences.length });
+      this.set({ ...IDLE, status: "ready", mode: "file", trackKey: track.key, duration: track.audio.duration ?? 0, voiceLabel: track.audio.label, segmentCount: this.sentences.length, currentSentence: this.sentences[0] ?? "" });
       return;
     }
-    await this.prepareSpeech(track, gen, estimate);
-  }
-
-  private async prepareSpeech(track: NarrationTrack, gen: number, estimate: number, prefix = "") {
-    if (!NarrationPlayer.speechSupported()) {
-      this.set({ ...IDLE, status: "unsupported", trackKey: track.key, message: `${prefix}This browser cannot read stories aloud. The transcript has the full story.` });
-      return;
-    }
-    this.set({ ...IDLE, status: "loading", mode: "speech", trackKey: track.key, segmentCount: this.sentences.length, duration: estimate });
-    const voices = await waitForVoices();
-    if (gen !== this.generation) return;
-    this.voice = pickVoice(voices, track.bcp47);
-    if (!this.voice) {
-      this.set({ status: "unsupported", message: `${prefix}Your device has no voice for this language. Read the transcript, or switch to another language.` });
-      return;
-    }
-    this.set({ status: "ready", voiceLabel: `Your device's voice (${this.voice.name})`, message: prefix || null });
+    this.set({
+      ...IDLE,
+      status: "unsupported",
+      trackKey: track.key,
+      segmentCount: this.sentences.length,
+      currentSentence: this.sentences[0] ?? "",
+      message: "ElevenLabs narration is not available for this story yet. Please read the transcript or choose another language.",
+    });
   }
 
   play() {
-    if (!this.track) return;
+    if (!this.track || !this.audio) return;
     const s = this.snap.status;
     if (s === "playing" || s === "loading" || s === "unsupported") return;
-    if (this.audio) {
-      if (s === "ended") this.audio.currentTime = 0;
-      this.audio.play().then(
-        () => this.set({ status: "playing" }),
-        () => this.set({ status: "error", message: "Playback was blocked or failed. Tap play again, or read the transcript." }),
-      );
-      return;
-    }
-    if (s === "ended") this.set({ segment: 0, elapsed: 0, progress: 0 });
-    this.speakFrom(this.snap.segment);
+    if (s === "ended") this.audio.currentTime = 0;
+    this.audio.play().then(
+      () => this.set({ status: "playing" }),
+      () => this.set({ status: "error", message: "Playback was blocked or failed. Tap play again, or read the transcript." }),
+    );
   }
 
   pause() {
-    if (this.snap.status !== "playing") return;
-    if (this.audio) {
-      this.audio.pause();
-      this.set({ status: "paused" });
-      return;
-    }
-    // speechSynthesis.pause() is unreliable on mobile: cancel and resume from the current sentence.
-    this.generation++;
-    window.speechSynthesis.cancel();
-    this.clearTick();
+    if (this.snap.status !== "playing" || !this.audio) return;
+    this.audio.pause();
     this.set({ status: "paused" });
   }
 
@@ -203,103 +162,49 @@ export class NarrationPlayer {
   }
 
   replay() {
-    if (!this.track) return;
-    if (this.audio) {
-      this.audio.currentTime = 0;
-      this.set({ status: "paused", elapsed: 0, progress: 0 });
-      this.play();
-      return;
-    }
-    this.generation++;
-    window.speechSynthesis.cancel();
-    this.set({ segment: 0, elapsed: 0, progress: 0, status: "paused" });
-    this.speakFrom(0);
+    if (!this.track || !this.audio) return;
+    this.audio.currentTime = 0;
+    this.set({ status: "paused", segment: 0, currentSentence: this.sentences[0] ?? "", elapsed: 0, progress: 0 });
+    this.play();
   }
 
-  /** Skip by seconds (file) or by sentences (speech). */
+  /** Skip forward or back by 15 seconds. */
   skip(direction: -1 | 1) {
-    if (this.audio) {
-      this.audio.currentTime = Math.max(0, Math.min(this.audio.duration || 0, this.audio.currentTime + direction * 15));
-      return;
-    }
-    const target = Math.max(0, Math.min(this.sentences.length - 1, this.snap.segment + direction));
-    const playing = this.snap.status === "playing";
-    this.generation++;
-    window.speechSynthesis.cancel();
-    this.set({ segment: target, ...this.positionAt(target) });
-    if (playing) this.speakFrom(target);
+    if (!this.audio) return;
+    this.audio.currentTime = Math.max(0, Math.min(this.audio.duration || 0, this.audio.currentTime + direction * 15));
   }
 
   stop() {
     this.generation++;
-    this.clearTick();
     if (this.audio) {
       this.audio.pause();
       this.audio.removeAttribute("src");
       this.audio.load();
       this.audio = null;
     }
-    if (NarrationPlayer.speechSupported()) window.speechSynthesis.cancel();
     this.track = null;
     this.set({ ...IDLE });
   }
 
-  private positionAt(segment: number) {
-    const elapsed = this.sentenceSeconds.slice(0, segment).reduce((a, b) => a + b, 0);
+  /** Map elapsed time onto sentence cues for prepared recordings without authored cue metadata. */
+  private segmentAt(elapsed: number, duration: number) {
     const total = this.sentenceSeconds.reduce((a, b) => a + b, 0) || 1;
-    return { elapsed, progress: elapsed / total };
-  }
-
-  private speakFrom(index: number) {
-    const track = this.track;
-    if (!track || !this.voice) return;
-    const gen = ++this.generation;
-    const synth = window.speechSynthesis;
-    synth.cancel();
-    const speakOne = (i: number) => {
-      if (gen !== this.generation) return;
-      if (i >= this.sentences.length) {
-        this.finish();
-        return;
-      }
-      const u = new SpeechSynthesisUtterance(this.sentences[i]);
-      u.voice = this.voice;
-      u.lang = this.voice?.lang ?? track.bcp47;
-      u.rate = 0.95;
-      const startAt = performance.now();
-      const base = this.positionAt(i);
-      this.set({ status: "playing", segment: i, ...base });
-      this.clearTick();
-      this.tick = window.setInterval(() => {
-        if (gen !== this.generation) return;
-        const within = Math.min(this.sentenceSeconds[i], (performance.now() - startAt) / 1000);
-        const total = this.sentenceSeconds.reduce((a, b) => a + b, 0) || 1;
-        this.set({ elapsed: base.elapsed + within, progress: (base.elapsed + within) / total });
-      }, 250);
-      u.onend = () => speakOne(i + 1);
-      u.onerror = (e) => {
-        if (gen !== this.generation || e.error === "interrupted" || e.error === "canceled") return;
-        this.clearTick();
-        this.set({ status: "error", message: "The device voice stopped unexpectedly. Tap play to continue, or read the transcript." });
-      };
-      synth.speak(u);
-    };
-    speakOne(index);
+    const target = Math.max(0, Math.min(total, elapsed / Math.max(duration, 0.001) * total));
+    let cursor = 0;
+    for (let i = 0; i < this.sentenceSeconds.length; i++) {
+      cursor += this.sentenceSeconds[i];
+      if (target < cursor || i === this.sentenceSeconds.length - 1) return i;
+    }
+    return 0;
   }
 
   private finish() {
-    this.clearTick();
     const t = this.track;
-    this.set({ status: "ended", progress: 1, elapsed: this.snap.duration, segment: Math.max(0, this.sentences.length - 1) });
+    const segment = Math.max(0, this.sentences.length - 1);
+    this.set({ status: "ended", progress: 1, elapsed: this.snap.duration, segment, currentSentence: this.sentences[segment] ?? "" });
     if (t) this.onComplete?.(t);
   }
 
-  private clearTick() {
-    if (this.tick !== null) {
-      window.clearInterval(this.tick);
-      this.tick = null;
-    }
-  }
 }
 
 /* ---------------- prepared-audio manifest ---------------- */
@@ -308,6 +213,7 @@ export interface ManifestEntry {
   siteId: string;
   lang: LangCode;
   storyVersion: number;
+  kind?: "story" | "summary";
   url: string;
   voice: string;
   generator: "elevenlabs" | "recorded";
@@ -325,9 +231,9 @@ export function loadNarrationManifest(): Promise<ManifestEntry[]> {
   return manifestPromise;
 }
 
-export function preparedAudioFor(entries: ManifestEntry[], siteId: string, lang: LangCode, storyVersion: number) {
-  const e = entries.find((x) => x.siteId === siteId && x.lang === lang && x.storyVersion === storyVersion);
-  if (!e) return undefined;
-  const label = e.generator === "elevenlabs" ? `Synthetic voice generated with ElevenLabs (${e.voice})` : `Recorded narration (${e.voice})`;
+export function preparedAudioFor(entries: ManifestEntry[], siteId: string, lang: LangCode, storyVersion: number, kind: "story" | "summary" = "story") {
+  const e = entries.find((x) => x.siteId === siteId && x.lang === lang && x.storyVersion === storyVersion && (x.kind ?? "story") === kind);
+  if (!e || e.generator !== "elevenlabs") return undefined;
+  const label = `ElevenLabs narration (${e.voice})`;
   return { url: e.url, label, duration: e.duration };
 }

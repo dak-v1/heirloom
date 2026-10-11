@@ -1,6 +1,6 @@
-// Client for the shared-memories API (server/app.mjs). The storage, guest identity
-// and moderation rules are implemented and tested; the composer, wall and
-// moderation UI are Stage 2 work.
+// Client for the shared-memories API (server/app.mjs). Storage, guest identity
+// and moderation rules are enforced by the server; this client handles owner,
+// public and moderation requests.
 //
 // Rules the server enforces (not the browser): new submissions are always
 // `pending`; only `approved` memories are returned publicly; approving requires
@@ -11,8 +11,11 @@ export type MemoryType = "note" | "drawing";
 export interface MemoryDraft {
   type: MemoryType;
   text?: string;
+  title?: string;
   /** PNG data URL from the drawing canvas. */
   drawing?: string;
+  /** Compressed JPEG data URL for an attached place memory. */
+  photo?: string;
   displayName?: string;
 }
 
@@ -21,9 +24,11 @@ export interface PublicMemory {
   siteId: string;
   type: MemoryType;
   text: string | null;
+  title: string | null;
   displayName: string | null;
   isSample: boolean;
   drawingUrl: string | null;
+  photoUrl: string | null;
   createdAt: string;
 }
 
@@ -117,6 +122,28 @@ export async function getMyMemories(): Promise<OwnMemory[]> {
   return (await call<{ memories: OwnMemory[] }>("/api/me/memories", {}, true)).memories;
 }
 
+/** Fetch one of this guest's private submission images using the guest token. */
+export async function getOwnMemoryMedia(memoryId: string, kind: "photo" | "drawing"): Promise<string> {
+  const path = kind === "photo" ? "photo" : "drawing.png";
+  const fetchMedia = async (retried = false): Promise<string> => {
+    let response: Response;
+    try {
+      response = await fetch(`/api/memories/${encodeURIComponent(memoryId)}/${path}`, {
+        headers: { "x-heirloom-guest": await guestToken() },
+      });
+    } catch {
+      throw new MemoryApiError("You appear to be offline.", 0);
+    }
+    if (response.status === 401 && !retried) {
+      await guestToken(true);
+      return fetchMedia(true);
+    }
+    if (!response.ok) throw new MemoryApiError("Memory image unavailable.", response.status);
+    return URL.createObjectURL(await response.blob());
+  };
+  return fetchMedia();
+}
+
 export function reportMemory(memoryId: string) {
   return call<{ ok: true }>(`/api/memories/${encodeURIComponent(memoryId)}/report`, { method: "POST" }, true);
 }
@@ -152,5 +179,16 @@ export async function adminDrawingUrl(token: string, memoryId: string): Promise<
     throw new MemoryApiError("You appear to be offline.", 0);
   }
   if (!r.ok) throw new MemoryApiError("Drawing unavailable.", r.status);
+  return URL.createObjectURL(await r.blob());
+}
+
+export async function adminPhotoUrl(token: string, memoryId: string): Promise<string> {
+  let r: Response;
+  try {
+    r = await fetch(`/api/memories/${encodeURIComponent(memoryId)}/photo`, { headers: adminHeaders(token) });
+  } catch {
+    throw new MemoryApiError("You appear to be offline.", 0);
+  }
+  if (!r.ok) throw new MemoryApiError("Photo unavailable.", r.status);
   return URL.createObjectURL(await r.blob());
 }

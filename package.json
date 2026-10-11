@@ -20,7 +20,7 @@
     "test:watch": "vitest",
     "assets": "node scripts/assets/build-all.mjs",
     "assets:2d": "node scripts/assets/build-2d.mjs",
-    "assets:3d": "node scripts/assets/build-3d.mjs",
+    "assets:3d": "node scripts/assets/build-3d.mjs && node scripts/assets/build-world-globe.mjs && node scripts/assets/build-memory-tube.mjs && node scripts/assets/build-memory-jar.mjs",
     "narration": "node scripts/generate-narration.mjs",
     "media:vendor": "node scripts/vendor-media.mjs"
   },

@@ -37,7 +37,7 @@ export function AboutPage() {
         <li>Dates are shown exactly as precisely as the holding archive records them ("c. 1890", "between 1930 and 1960"). The timeline only shows eras we have photographs for.</li>
         <li>Each hotspot is marked either as a <strong>sourced fact</strong> (with a link) or as <strong>what you can see</strong> (an observation about the picture).</li>
         <li>Stories are written from the sources listed below. English is the curated version. The 中文 and Bahasa Melayu versions are draft translations prepared with AI assistance and are awaiting review by fluent community reviewers. A Tamil version is not yet available.</li>
-        <li>Narration is a synthetic voice: your device's text-to-speech, or pre-generated audio where available. Soundscapes are synthesised in your browser to suggest a mood; they are not historical recordings.</li>
+        <li>Narration is a synthetic ElevenLabs voice, not a historical recording. Soundscapes are synthesised in your browser to suggest a mood; they are not historical recordings.</li>
         <li>One game photograph (Thian Hock Keng, 1928) is identified by us, not by the archive; it is labelled as such.</li>
       </ul>
 
@@ -104,7 +104,7 @@ export function PrivacyPage() {
       <p>Narration and soundscapes play only after you press play. Arriving at a place never starts sound.</p>
       <h2>Shared memories</h2>
       <p>
-        Leaving a note or drawing is optional and never affects your stamp. What you share is stored on the Heirloom server with an anonymous guest ID that this browser keeps; there is no account and no email. A display name is optional and is shown with your memory if you give one.
+        Leaving a photo memory, note or drawing is optional and never affects your stamp. Photos and words you submit are stored on the Heirloom server with an anonymous guest ID that this browser keeps; there is no account and no email. A display name is optional and is shown with your memory if you give one.
       </p>
       <p>
         Every new memory starts as <strong>waiting for review</strong> and is not visible to anyone else. It becomes public, on that place's wall only, after a moderator approves it. Memories that are rejected or hidden are never shown publicly, and moderation reasons are never published. In this browser you can see the status of your own submissions under “Your submissions” on each place.
@@ -114,7 +114,7 @@ export function PrivacyPage() {
       </p>
       <h2>Third parties</h2>
       <p>
-        Photographs load from Wikimedia Commons, and map tiles from OpenStreetMap. Those services receive normal web requests (such as your IP address) when your browser fetches images. The “Directions” button opens Google Maps in a new tab. If pre-generated narration is added, it will have been made in advance with ElevenLabs; your device never contacts ElevenLabs.
+        Photographs load from Wikimedia Commons, and map tiles from OpenStreetMap. Those services receive normal web requests (such as your IP address) when your browser fetches images. The “Directions” button opens Google Maps in a new tab. Narration is generated in advance with ElevenLabs; your device never contacts ElevenLabs.
       </p>
       <h2>Analytics</h2>
       <p>Heirloom keeps a small, local-only log of events such as “stamp earned”, to help us test. It contains no memory text and no location, and it is not sent anywhere.</p>
@@ -129,7 +129,7 @@ export function TermsPage() {
       <p>These are living places of worship. Dress modestly, keep your voice low, follow posted visiting times and signs, and ask before photographing people.</p>
       <h2>Sharing memories</h2>
       <ul>
-        <li>Share your own memories, notes and drawings about the place.</li>
+        <li>Share your own photos, memories, notes and drawings about the place. Ask permission before photographing people.</li>
         <li>No hate, harassment, personal information about others, advertising or anything unsafe.</li>
         <li>Every contribution is reviewed by a moderator before it appears publicly. Moderators can approve, reject or later hide any memory, and we don't publish the reasons.</li>
         <li>Anyone can report a public memory; reported memories may be hidden while we review them.</li>

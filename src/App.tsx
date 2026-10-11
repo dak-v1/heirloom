@@ -1,5 +1,5 @@
 import { Component, lazy, Suspense, useEffect, type ReactNode } from "react";
-import { BrowserRouter, Route, Routes, useLocation, useNavigate } from "react-router";
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate, useParams } from "react-router";
 import { AppShell } from "./components/AppShell";
 import { ToastProvider, useToast } from "./components/Toast";
 import { BADGE_BY_ID } from "./content/badges";
@@ -13,7 +13,8 @@ import { HomePage } from "./features/home/HomePage";
 // Route-level code splitting keeps the first load small on phones (Leaflet, the
 // site experience and three.js only download when needed).
 const MapPage = lazy(() => import("./features/map/MapPage").then((m) => ({ default: m.MapPage })));
-const SitePage = lazy(() => import("./features/site/SitePage").then((m) => ({ default: m.SitePage })));
+const NowPage = lazy(() => import("./features/now/NowPage").then((m) => ({ default: m.NowPage })));
+const TourPage = lazy(() => import("./features/tour/TourPage").then((m) => ({ default: m.TourPage })));
 const PassportPage = lazy(() => import("./features/passport/PassportPage").then((m) => ({ default: m.PassportPage })));
 const ProfilePage = lazy(() => import("./features/profile/ProfilePage").then((m) => ({ default: m.ProfilePage })));
 const info = () => import("./features/info/InfoPages");
@@ -32,6 +33,13 @@ function PageLoading() {
       <div className="skeleton-line" style={{ width: "95%", height: 180, marginTop: 24, borderRadius: 12 }} />
     </div>
   );
+}
+
+/** Keep old site URLs working while opening the tour directly. */
+function SiteTourRedirect() {
+  const { slug = "" } = useParams();
+  const location = useLocation();
+  return <Navigate to={`/tour/${slug}${location.search}`} replace state={location.state} />;
 }
 
 const HotspotDebug = import.meta.env.DEV ? lazy(() => import("./features/dev/HotspotDebug").then((m) => ({ default: m.HotspotDebug }))) : null;
@@ -107,7 +115,11 @@ function Root() {
               <Routes>
                 <Route path="/" element={<HomePage />} />
                 <Route path="/map" element={<MapPage />} />
-                <Route path="/site/:slug" element={<SitePage />} />
+                <Route path="/now" element={<NowPage />} />
+                <Route path="/timewalk" element={<NowPage />} />
+                <Route path="/camera" element={<NowPage />} />
+                <Route path="/site/:slug" element={<SiteTourRedirect />} />
+                <Route path="/tour/:slug" element={<TourPage />} />
                 <Route path="/passport" element={<PassportPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/about" element={<AboutPage />} />

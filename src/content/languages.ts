@@ -6,7 +6,7 @@ export interface StoryLanguage {
   label: string;
   /** English name for screen readers and notices. */
   english: string;
-  /** BCP-47 tag used to pick a device voice and set `lang` on transcripts. */
+  /** BCP-47 tag used to label the story language for assistive technology. */
   bcp47: string;
 }
 

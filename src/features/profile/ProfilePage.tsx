@@ -6,6 +6,7 @@ import { AvatarPicker } from "./AvatarPicker";
 import { BadgeBoard } from "./BadgeBoard";
 import { BadgeCloseup } from "./BadgeCloseup";
 import { ExplorerCard } from "./ExplorerCard";
+import { MyMemories } from "./MyMemories";
 import "./profile.css";
 
 export function ProfilePage() {
@@ -47,6 +48,7 @@ export function ProfilePage() {
             <h2 id="locked-h">Still to earn</h2>
             <span className="muted">{locked.length} to go</span>
           </div>
+          <p className="locked__hint">Swipe to browse · tap a badge to see its details</p>
           <ul className="locked">
             {locked.map((b) => (
               <li key={b.id}>
@@ -65,6 +67,8 @@ export function ProfilePage() {
           </ul>
         </section>
       )}
+
+      <MyMemories />
 
       <p className={`notice storage-note${progress.persistent ? "" : " notice--warn"}`}>
         <Info size={16} aria-hidden="true" />

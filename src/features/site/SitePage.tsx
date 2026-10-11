@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, BookOpen, Camera, Check, History, Info, List, MapPin, MessageSquareHeart, Puzzle, Stamp } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Box, Camera, Check, History, Info, List, MapPin, MessageSquareHeart, Puzzle, Stamp } from "lucide-react";
 import { findSite } from "../../content/sites";
 import type { Site } from "../../content/types";
 import { Button, ButtonLink, IconButton } from "../../components/Button";
@@ -214,6 +214,10 @@ function SiteExperience({ site }: { site: Site }) {
 
       <div className="page site-page">
         <p className="site-summary">{site.summary}</p>
+        <section className="site-tour-promo card" aria-label={`Explore ${site.name} in 3D`}>
+          <div><span className="label">A place-specific reconstruction</span><p>Step into a sourced historical interpretation of {site.name}, with interactive details and a spoken story.</p></div>
+          <ButtonLink to={`/tour/${site.slug}`} ticket icon={<Box size={18} />} iconRight={<ArrowRight size={18} />}>Explore in 3D</ButtonLink>
+        </section>
 
         {earned && (
           <div className="done-banner card">
@@ -372,7 +376,10 @@ function SiteExperience({ site }: { site: Site }) {
           }}
           onBack={() => {
             setSheet(null);
-            setMemorySent(false);
+          }}
+          onViewSaved={() => {
+            setSheet(null);
+            window.setTimeout(() => document.getElementById("wall-h")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
           }}
         />
       </Sheet>
@@ -466,4 +473,3 @@ function Step({ n, title, icon, done, optional, children }: { n: number; title: 
     </li>
   );
 }
-

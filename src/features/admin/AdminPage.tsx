@@ -4,7 +4,7 @@ import { Check, EyeOff, LogOut, RotateCw, X } from "lucide-react";
 import { findSite } from "../../content/sites";
 import { Button } from "../../components/Button";
 import { Tag } from "../../components/Media";
-import { MemoryApiError, adminDrawingUrl, adminListMemories, adminModerate, type ModerationItem, type ModerationStatus } from "../../services/memories";
+import { MemoryApiError, adminDrawingUrl, adminPhotoUrl, adminListMemories, adminModerate, type ModerationItem, type ModerationStatus } from "../../services/memories";
 import "../memories/memories.css";
 
 // Session-only: the token is gone when this tab closes. It is never shown, logged or put in a URL.
@@ -96,8 +96,9 @@ export function AdminPage() {
     const urls: Record<string, string> = {};
     let live = true;
     for (const m of items) {
-      if (!m.drawingUrl) continue;
-      adminDrawingUrl(token, m.id)
+      const loadPreview = m.photoUrl ? adminPhotoUrl(token, m.id) : m.drawingUrl ? adminDrawingUrl(token, m.id) : null;
+      if (!loadPreview) continue;
+      loadPreview
         .then((url) => {
           if (!live) return URL.revokeObjectURL(url);
           urls[m.id] = url;
@@ -201,8 +202,8 @@ export function AdminPage() {
               return (
                 <li key={m.id} className="admin__item card">
                   <header>
-                    <strong>{site ? <Link to={`/site/${site.slug}`}>{site.name}</Link> : m.siteId}</strong>
-                    <Tag>{m.type === "note" ? "Note" : "Drawing"}</Tag>
+                    <strong>{site ? <Link to={`/tour/${site.slug}`}>{site.name}</Link> : m.siteId}</strong>
+                    <Tag>{m.photoUrl ? "Photo memory" : m.type === "note" ? "Note" : "Drawing"}</Tag>
                     {m.isSample && <Tag tone="demo">Sample</Tag>}
                     {m.reportCount > 0 && <Tag tone="terracotta">{m.reportCount} report{m.reportCount === 1 ? "" : "s"}</Tag>}
                     <span className="muted">{new Date(m.createdAt).toLocaleString("en-SG")}</span>
@@ -216,7 +217,14 @@ export function AdminPage() {
                     ) : (
                       <p className="muted">Loading drawing…</p>
                     ))}
+                  {m.photoUrl &&
+                    (previews[m.id] ? (
+                      <img className="admin__drawing" src={previews[m.id]} alt={`Memory photo for ${site?.name ?? m.siteId}`} />
+                    ) : (
+                      <p className="muted">Loading photo…</p>
+                    ))}
                   {/* Plain text only, never HTML. */}
+                  {m.title && <h3 className="memory-card__title">{m.title}</h3>}
                   {m.text && <p className="admin__note">{m.text}</p>}
                   <div className="admin__actions">
                     {ACTIONS[m.status].map((a) => (
