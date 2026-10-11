@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useNavigate } from "react-router";
 import { ArrowLeft, Camera, Check, ChevronRight, Compass, Image as ImageIcon, MapPin, Mic2, Pause, Play, RotateCcw, Volume2, X } from "lucide-react";
 import { SITES } from "../../content/sites";
 import { Button, IconButton } from "../../components/Button";
@@ -20,6 +21,45 @@ const STEP_INFO: { id: Exclude<FlowStep, "explore">; title: string }[] = [
 ];
 const FRAME_GUIDANCE = ["Sweep left", "Face ahead", "Sweep right"];
 const DEMO_SITE_ID = "thian-hock-keng";
+
+function TimePanorama({ src, alt, rotation, half }: { src: string; alt: string; rotation: number; half: "past" | "present" }) {
+  const panelRef = useRef<HTMLElement>(null);
+  const [panelHeight, setPanelHeight] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState(1);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const measure = () => setPanelHeight(panel.clientHeight);
+    measure();
+    if (typeof ResizeObserver === "undefined") {
+      window.addEventListener("resize", measure);
+      return () => window.removeEventListener("resize", measure);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, []);
+
+  const panoramaWidth = panelHeight * aspectRatio;
+  const offset = panoramaWidth * (rotation / 360);
+
+  return <section ref={panelRef} className={`now-time-window__panel now-time-window__panel--${half}`} aria-label={alt}>
+    <div className="now-time-window__track" style={{ transform: `translate3d(calc(-50% - ${offset}px), 0, 0)` }}>
+      {[0, 1, 2].map((copy) => <img
+        key={copy}
+        src={src}
+        alt={copy === 1 ? alt : ""}
+        aria-hidden={copy !== 1}
+        draggable={false}
+        onLoad={(event) => {
+          const image = event.currentTarget;
+          if (image.naturalWidth && image.naturalHeight) setAspectRatio(image.naturalWidth / image.naturalHeight);
+        }}
+      />)}
+    </div>
+  </section>;
+}
 
 function makePanorama(frames: string[]) {
   const tileWidth = 720;
@@ -58,7 +98,8 @@ function makePanorama(frames: string[]) {
 
 export function NowPage() {
   const geo = useGeo();
-  const [siteId, setSiteId] = useState(() => geo.nearest?.site.id ?? SITES[0].id);
+  const navigate = useNavigate();
+  const [siteId, setSiteId] = useState(DEMO_SITE_ID);
   const site = SITES.find((item) => item.id === siteId) ?? SITES[0];
   const pastEras = useMemo(
     () => site.eras.filter((era) => !era.isToday).slice().sort((a, b) => a.sortYear - b.sortYear),
@@ -82,11 +123,12 @@ export function NowPage() {
   const [cameraStarting, setCameraStarting] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [frameError, setFrameError] = useState<string | null>(null);
-  const [demoMode, setDemoMode] = useState(false);
-  const [timeWindowOpen, setTimeWindowOpen] = useState(false);
+  const [demoMode, setDemoMode] = useState(true);
+  const [timeWindowOpen, setTimeWindowOpen] = useState(true);
+  const [panoramaRotation, setPanoramaRotation] = useState(0);
+  const panoramaDragRef = useRef<{ x: number; rotation: number } | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const cameraRequestedRef = useRef(false);
-  const manualSiteRef = useRef(false);
+  const manualSiteRef = useRef(true);
   const abandonPendingCameraRef = useRef(false);
 
   useEffect(() => {
@@ -144,14 +186,6 @@ export function NowPage() {
     }
   }, []);
 
-  // Now remains a direct camera action: request permission as soon as the
-  // visitor enters, while still offering a photo-based path if access fails.
-  useEffect(() => {
-    if (cameraRequestedRef.current) return;
-    cameraRequestedRef.current = true;
-    void startCamera();
-  }, [startCamera]);
-
   const stopCamera = useCallback(() => {
     abandonPendingCameraRef.current = true;
     stream?.getTracks().forEach((track) => track.stop());
@@ -208,6 +242,7 @@ export function NowPage() {
 
   const startDemo = () => {
     const demoSite = SITES.find((item) => item.id === DEMO_SITE_ID) ?? SITES[0];
+    stopCamera();
     manualSiteRef.current = true;
     setDemoMode(true);
     setSiteId(demoSite.id);
@@ -216,13 +251,27 @@ export function NowPage() {
     setFrameError(null);
     setStep("capture");
     setTimeWindowOpen(true);
-    if (!stream) void startCamera();
   };
 
   const continueFromTimeWindow = () => {
     setTimeWindowOpen(false);
     stopCamera();
     setStep("place");
+  };
+
+  const beginPanoramaDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest("button")) return;
+    panoramaDragRef.current = { x: event.clientX, rotation: panoramaRotation };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+
+  const movePanorama = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = panoramaDragRef.current;
+    if (!drag) return;
+    const width = Math.max(1, event.currentTarget.clientWidth);
+    const nextRotation = (drag.rotation - ((event.clientX - drag.x) / width) * 360) % 360;
+    setPanoramaRotation((nextRotation + 360) % 360);
   };
 
   const confirmSite = () => {
@@ -246,7 +295,6 @@ export function NowPage() {
   const activeHotspot = config.hotspots.find((hotspot) => hotspot.id === activeHotspotId);
   const currentSentence = narration.currentSentence || story.version.paragraphs[0] || site.summary;
   const voiceLabel = narration.voiceLabel ?? (narration.status === "loading" ? "Preparing the guide…" : "Narrated story");
-  const canPlay = !["loading", "idle", "unsupported"].includes(narration.status);
   const placeStatus = demoMode
     ? `Demo suggestion · ${site.name}`
     : geo.nearest
@@ -260,18 +308,20 @@ export function NowPage() {
           : "No nearby GPS match yet · choose a place or try the demo";
 
   if (timeWindowOpen) {
-    return <div className={`now-time-window now-time-window--${site.accent}`} role="region" aria-label="Past and present camera view">
-      <section className="now-time-window__past" aria-label={`Archival view of ${site.name}`}>
-        <img src={selectedEra?.image.src ?? presentEra.image.src} alt={`${site.name}, archival view from ${selectedEra?.image.dateLabel ?? "the past"}`} />
-      </section>
-      <section className="now-time-window__present" aria-label={`Present-day view of ${site.name}`}>
-        {stream
-          ? <video ref={videoRef} onLoadedMetadata={() => setCameraReady(true)} autoPlay muted playsInline aria-label="Live rear camera view" />
-          : <img src={presentEra.image.src} alt={`${site.name} today: ${presentEra.image.alt}`} />}
-      </section>
+    return <div
+      className={`now-time-window now-time-window--${site.accent}`}
+      role="region"
+      aria-label="Past and present panoramic camera view. Drag horizontally to rotate through 360 degrees."
+      onPointerDown={beginPanoramaDrag}
+      onPointerMove={movePanorama}
+      onPointerUp={() => { panoramaDragRef.current = null; }}
+      onPointerCancel={() => { panoramaDragRef.current = null; }}
+    >
+      <TimePanorama src="/assets/now/camera-past-classroom-panorama.jpg" alt="Historical panoramic view" rotation={panoramaRotation} half="past" />
+      <TimePanorama src="/assets/now/camera-present-panorama.jpg" alt="Present-day panoramic view" rotation={panoramaRotation} half="present" />
       <div className="now-time-window__seam" aria-hidden="true" />
       <div className="now-time-window__controls">
-        <IconButton label="Back to camera" variant="dark" onClick={() => setTimeWindowOpen(false)}><ArrowLeft size={21} /></IconButton>
+        <IconButton label="Back to home" variant="dark" onClick={() => navigate("/")}><ArrowLeft size={21} /></IconButton>
         <IconButton label="Continue to the archive and 3D tour" variant="dark" onClick={continueFromTimeWindow}><ChevronRight size={22} /></IconButton>
       </div>
     </div>;
@@ -412,10 +462,10 @@ export function NowPage() {
             <span className="now-explore__story-kicker"><Mic2 size={13} /> Site story · {voiceLabel}</span>
             <p aria-live="polite">{currentSentence}</p>
             <div className="now-explore__story-controls">
-              <button type="button" className="now-explore__play" aria-label={narration.status === "playing" ? "Pause narration" : "Play narration"} disabled={!canPlay} onClick={() => narration.status === "playing" ? player.pause() : story.play()}>
+              <button type="button" className="now-explore__play" aria-label={narration.status === "playing" ? "Pause narration" : "Play narration"} onClick={() => narration.status === "playing" ? player.pause() : story.play()}>
                 {narration.status === "playing" ? <Pause size={19} /> : <Play size={19} />}
               </button>
-              <span><Volume2 size={15} />{narration.mode === "file" ? "ElevenLabs voice guide" : "Audio guide"}</span>
+              <span><Volume2 size={15} />{narration.mode === "file" ? "ElevenLabs voice guide" : narration.mode === "speech" ? "Device voice guide" : "Audio guide"}</span>
               <button type="button" className="now-explore__transcript" onClick={() => setAboutOpen((open) => !open)}>Description &amp; sources</button>
             </div>
             {narration.message && <small role="status">{narration.message}</small>}

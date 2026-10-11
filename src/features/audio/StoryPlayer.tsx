@@ -61,7 +61,7 @@ function StatusLine({ story }: { story: Story }) {
   return (
     <div className="story__status">
       {story.version.status === "draft-translation" && <Tag tone="draft">Draft translation</Tag>}
-      {n.voiceLabel && <Tag tone="olive">ElevenLabs voice</Tag>}
+      {n.mode === "file" && <Tag tone="olive">ElevenLabs voice</Tag>}
       {n.voiceLabel && <span className="muted story__voice">{n.voiceLabel}</span>}
     </div>
   );
@@ -72,7 +72,6 @@ export function StoryPlayer({ site, story, onOpenTranscript }: { site: Site; sto
   const n = useNarration();
   const { player } = useAudio();
   const playing = n.status === "playing";
-  const disabled = n.status === "unsupported" || n.status === "loading" || n.status === "idle";
   return (
     <div className="story">
       <p className="story__title" lang={story.version.lang === "zh" ? "zh-Hans" : story.version.lang}>
@@ -80,22 +79,21 @@ export function StoryPlayer({ site, story, onOpenTranscript }: { site: Site; sto
       </p>
       <LanguagePicker story={story} />
       <div className="story__controls">
-        <IconButton label="Back 15 seconds" onClick={() => player.skip(-1)} disabled={disabled}>
+        <IconButton label="Back 15 seconds" onClick={() => player.skip(-1)}>
           <SkipBack size={22} />
         </IconButton>
         <button
           type="button"
           className="story__play"
           onClick={() => (playing ? player.pause() : story.play())}
-          disabled={disabled}
           aria-label={playing ? "Pause story" : n.status === "paused" ? "Resume story" : n.status === "ended" ? "Play story again" : "Listen to the story"}
         >
           {playing ? <Pause size={30} aria-hidden="true" /> : <Play size={30} aria-hidden="true" style={{ marginLeft: 3 }} />}
         </button>
-        <IconButton label="Forward 15 seconds" onClick={() => player.skip(1)} disabled={disabled}>
+        <IconButton label="Forward 15 seconds" onClick={() => player.skip(1)}>
           <SkipForward size={22} />
         </IconButton>
-        <IconButton label="Replay from the start" onClick={() => player.replay()} disabled={disabled}>
+        <IconButton label="Replay from the start" onClick={() => player.replay()}>
           <RotateCcw size={20} />
         </IconButton>
       </div>
@@ -168,14 +166,12 @@ export function MiniPlayer({ story, onOpenTranscript }: { story: Story; onOpenTr
   const n = useNarration();
   const { player, stopAll, ambient } = useAudio();
   const playing = n.status === "playing";
-  const disabled = n.status === "unsupported" || n.status === "loading" || n.status === "idle";
   return (
     <div className="mini-player">
       <button
         type="button"
         className="mini-player__play"
         onClick={() => (playing ? player.pause() : story.play())}
-        disabled={disabled}
         aria-label={playing ? "Pause story" : "Listen to the story"}
       >
         {playing ? <Pause size={20} aria-hidden="true" /> : <Play size={20} aria-hidden="true" />}

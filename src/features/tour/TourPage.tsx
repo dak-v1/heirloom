@@ -87,12 +87,11 @@ function TourExperience({ site, demo }: { site: (typeof SITES)[number]; demo: bo
     else player.play();
   };
   const playing = narration.status === "playing";
-  const controlsDisabled = narration.status === "loading" || narration.status === "idle" || narration.status === "unsupported";
   const sentence = narration.currentSentence || selectedTrack.paragraphs[0] || story.version.title;
   const position = narration.segmentCount ? Math.min(100, ((narration.segment + 1) / narration.segmentCount) * 100) : 0;
   const voiceSource = narration.mode === "file"
     ? narration.voiceLabel?.toLowerCase().includes("elevenlabs") ? "ElevenLabs narration" : "Prepared narration"
-    : "Preparing narration";
+    : narration.mode === "speech" ? "Device voice" : "Narrated story";
 
   const startTourSwipe = (event: ReactTouchEvent<HTMLElement>) => {
     const touch = event.touches[0];
@@ -221,12 +220,12 @@ function TourExperience({ site, demo }: { site: (typeof SITES)[number]; demo: bo
               </div>
 
               <div className="heritage-tour__controls">
-                <IconButton label="Back 15 seconds" variant="dark" disabled={controlsDisabled} onClick={() => player.skip(-1)}><SkipBack size={21} /></IconButton>
-                <IconButton label="Replay from the beginning" variant="dark" disabled={controlsDisabled} onClick={() => player.replay()}><RotateCcw size={18} /></IconButton>
-                <button type="button" className="heritage-tour__play" disabled={controlsDisabled} aria-label={playing ? "Pause narration" : "Play narration"} onClick={() => playing ? player.pause() : playStory()}>
+                <IconButton label="Back 15 seconds" variant="dark" onClick={() => player.skip(-1)}><SkipBack size={21} /></IconButton>
+                <IconButton label="Replay from the beginning" variant="dark" onClick={() => player.replay()}><RotateCcw size={18} /></IconButton>
+                <button type="button" className="heritage-tour__play" aria-label={playing ? "Pause narration" : "Play narration"} onClick={() => playing ? player.pause() : playStory()}>
                   {playing ? <Pause size={25} fill="currentColor" /> : <Play size={25} fill="currentColor" />}
                 </button>
-                <IconButton label="Forward 15 seconds" variant="dark" disabled={controlsDisabled} onClick={() => player.skip(1)}><SkipForward size={21} /></IconButton>
+                <IconButton label="Forward 15 seconds" variant="dark" onClick={() => player.skip(1)}><SkipForward size={21} /></IconButton>
                 <span className="heritage-tour__voice"><Volume2 size={17} />{narration.voiceLabel ?? (narration.status === "loading" ? "Preparing narration…" : "Narration ready")}</span>
                 <button type="button" className="heritage-tour__story-text" onClick={() => setAboutOpen((open) => !open)}><BookOpen size={16} /> Description</button>
               </div>
@@ -242,6 +241,7 @@ function TourExperience({ site, demo }: { site: (typeof SITES)[number]; demo: bo
         open={memoryOpen}
         onClose={() => { if (!memoryBusy) { setMemoryOpen(false); setMemoryWallOpen(false); } }}
         title={memoryWallOpen ? `Memories at ${site.name}` : `Leave a memory at ${site.name}`}
+        hideTitle={memoryWallOpen}
         size="full"
         locked={memoryBusy}
       >
