@@ -155,9 +155,9 @@ export function MapPage() {
             })}
           </ol>
           <h2 className="placelist__more">
-            More stamps <Tag tone="demo">Demo</Tag>
+            More stamps
           </h2>
-          <p className="muted placelist__more-note">Placeholder stamps that fill the passport for demos. They aren't on the trail yet, so there's no visit to explore.</p>
+          <p className="muted placelist__more-note">These places aren't on the trail yet, so there's no visit to explore.</p>
           <ul className="placelist placelist--demo">
             {DEMO_PLACES.map((d) => (
               <li key={d.id} className="placelist__item placelist__item--demo card card--flat">
@@ -235,12 +235,12 @@ function DemoPanel({ place, collected, onClose, onPassport }: { place: DemoPlace
           <p className="label">{place.area}</p>
           <h2 id="map-panel-h">{place.name}</h2>
           <p className="muted map-panel__meta">
-            <Tag tone="demo">Demo stamp</Tag> {collected && <Tag tone="olive">In your passport</Tag>}
+            {collected && <Tag tone="olive">In your passport</Tag>}
           </p>
         </div>
       </div>
       <p className="map-panel__summary">
-        {place.note} It's a placeholder stamp for demos and isn't on the trail yet.
+        {place.note} It isn't on the trail yet.
       </p>
       <div className="map-panel__actions">
         {collected && (

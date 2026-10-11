@@ -184,7 +184,7 @@
   background: var(--olive-deep);
 }
 
-/* Placeholder demo stamps: smaller, paler pins with a Demo tag */
+/* Placeholder demo stamps: smaller, paler pins */
 .pin--demo {
   width: 40px;
   height: 50px;
@@ -204,21 +204,6 @@
 .pin--demo.is-visited::after {
   background: var(--olive-deep);
 }
-.pin__demo {
-  position: absolute;
-  left: 50%;
-  top: -7px;
-  translate: -50% 0;
-  padding: 1px 4px;
-  border-radius: 3px;
-  background: var(--paper-light);
-  border: 1px dashed var(--ink-muted);
-  color: var(--ink-muted);
-  font: 700 8px/1.2 var(--font-display);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .map-hint {
   position: absolute;
   left: 50%;

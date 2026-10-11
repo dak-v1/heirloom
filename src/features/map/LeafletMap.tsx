@@ -8,7 +8,7 @@ import { mapMeHtml } from "../profile/MapMe";
 
 interface Props {
   sites: Site[];
-  /** Placeholder demo stamps, pinned with their stamp art and a Demo tag. */
+  /** Placeholder demo stamps, pinned with their stamp art. */
   demoPlaces: DemoPlace[];
   selectedId: string | null;
   visited: Set<string>;
@@ -33,7 +33,7 @@ function icon(site: Site, n: number, selected: boolean, visited: boolean) {
 function demoIcon(place: DemoPlace, selected: boolean, collected: boolean) {
   return L.divIcon({
     className: "pin-wrap",
-    html: `<span class="pin pin--demo${selected ? " is-selected" : ""}${collected ? " is-visited" : ""}"><span class="pin__stamp"><img src="${place.stamp.art}" alt=""/></span><span class="pin__demo">Demo</span></span>`,
+    html: `<span class="pin pin--demo${selected ? " is-selected" : ""}${collected ? " is-visited" : ""}"><span class="pin__stamp"><img src="${place.stamp.art}" alt=""/></span></span>`,
     iconSize: [40, 50],
     iconAnchor: [20, 48],
   });
@@ -82,7 +82,7 @@ export function LeafletMap({ sites, demoPlaces, selectedId, visited, onSelect, f
       markers.current.set(s.id, mk);
     });
     demoPlaces.forEach((d) => {
-      const mk = L.marker([d.coords.lat, d.coords.lng], { icon: demoIcon(d, false, false), title: `${d.name} (demo stamp)`, alt: `${d.name}, demo stamp`, keyboard: true, riseOnHover: true })
+      const mk = L.marker([d.coords.lat, d.coords.lng], { icon: demoIcon(d, false, false), title: d.name, alt: d.name, keyboard: true, riseOnHover: true })
         .on("click", () => onSelectRef.current(d.id))
         .on("keypress", (e: L.LeafletKeyboardEvent) => {
           if (e.originalEvent.key === "Enter" || e.originalEvent.key === " ") onSelectRef.current(d.id);
