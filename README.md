@@ -90,6 +90,7 @@ Copy `.env.example` to `.env`. Nothing is required for the core journey.
 | `HEIRLOOM_GUEST_SECRET` | server | Signs anonymous guest tokens. Set a long random value in production |
 | `HEIRLOOM_ADMIN_TOKEN` | server | Moderator token for `/api/admin/*`. Without it, memories can be submitted (pending) but not approved |
 | `HEIRLOOM_DB_FILE` | server | SQLite file (default `server/data/heirloom.sqlite`) |
+| `HEIRLOOM_DATABASE_URL` | server | Optional hosted Postgres connection string; takes precedence over SQLite |
 | `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `ELEVENLABS_VOICE_NAME`, `ELEVENLABS_MODEL_ID` | `scripts/generate-narration.mjs` only | Pre-generate narration. Never sent to the browser |
 
 ## Narration
@@ -122,6 +123,10 @@ docs/             handoff, sources register, asset specs, acceptance results
 ## Deploying
 
 Any Node 22.13+ host (Render, Railway, Fly.io, a VM): `npm install && npm run build`, then `npm start`. Serve over HTTPS. Set `HEIRLOOM_GUEST_SECRET` and `HEIRLOOM_ADMIN_TOKEN`, and give `HEIRLOOM_DB_FILE` a persistent disk if memories should survive redeploys.
+
+### Vercel
+
+Vercel uses the catch-all API function in `api/[...route].mjs`; memory submissions are stored in hosted Postgres instead of the function's temporary filesystem. In the Vercel project, connect a Postgres provider from **Storage → Marketplace** (Neon is supported), make sure its connection string is available as `POSTGRES_URL` or `DATABASE_URL`, and add `HEIRLOOM_ADMIN_TOKEN` for moderation. Redeploy after connecting storage. `/api/health` should report `memories.storage: "postgres"`. The first API request creates the memory table and seeds the labelled demo memories. Do not point `HEIRLOOM_DB_FILE` at `/tmp` for production: that file is temporary and is not shared across function instances.
 
 ## Honesty notes
 
