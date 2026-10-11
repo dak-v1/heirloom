@@ -4,18 +4,11 @@ import type { Site } from "../../content/types";
 import { Button } from "../../components/Button";
 import { Tag } from "../../components/Media";
 import { Sheet } from "../../components/Sheet";
-import { MemoryApiError, getApprovedMemories, getMyMemories, hasGuestToken, reportMemory, type OwnMemory, type PublicMemory } from "../../services/memories";
+import { MemoryApiError, getApprovedMemories, reportMemory, type PublicMemory } from "../../services/memories";
 import { MemoryJar } from "./MemoryJar";
 import "./memories.css";
 
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-SG", { day: "numeric", month: "short", year: "numeric" });
-
-const STATUS: Record<OwnMemory["status"], { label: string; tone: "mustard" | "olive" | "plain" }> = {
-  pending: { label: "Waiting for review", tone: "mustard" },
-  approved: { label: "Published", tone: "olive" },
-  rejected: { label: "Not published", tone: "plain" },
-  hidden: { label: "Not published", tone: "plain" },
-};
 
 const SAMPLE_ORB_PHOTOS: Record<string, string> = {
   "sample_thian-hock-keng_1": "/assets/memories/sample-thk-orb-1.jpg",
@@ -28,11 +21,10 @@ function orbPhoto(memory: PublicMemory) {
 
 /**
  * Scrapbook wall of approved memories for one site (the server never returns anything
- * else), plus this browser's own submissions with their review status.
+ * else).
  */
 export function MemoryWall({ site, refreshKey, onLeave }: { site: Site; refreshKey: number; onLeave: () => void }) {
   const [state, setState] = useState<{ status: "loading" | "ok" | "error"; items: PublicMemory[]; error?: string }>({ status: "loading", items: [] });
-  const [mine, setMine] = useState<OwnMemory[]>([]);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [reported, setReported] = useState<Set<string>>(new Set());
   const [notice, setNotice] = useState("");
@@ -44,11 +36,6 @@ export function MemoryWall({ site, refreshKey, onLeave }: { site: Site; refreshK
     getApprovedMemories(site.id)
       .then((items) => live && setState({ status: "ok", items }))
       .catch((e) => live && setState({ status: "error", items: [], error: e instanceof MemoryApiError ? e.message : "Couldn't load memories." }));
-    if (hasGuestToken()) {
-      getMyMemories()
-        .then((list) => live && setMine(list.filter((m) => m.siteId === site.id)))
-        .catch(() => live && setMine([]));
-    }
     return () => {
       live = false;
     };
@@ -131,21 +118,6 @@ export function MemoryWall({ site, refreshKey, onLeave }: { site: Site; refreshK
         </article>}
       </Sheet>
 
-      {mine.length > 0 && (
-        <div className="my-memories">
-          <h3>Your submissions</h3>
-          <p className="muted">Only you can see this list, in this browser.</p>
-          <ul>
-            {mine.map((m) => (
-              <li key={m.id}>
-                <span className="my-memories__what">{m.type === "note" ? `“${(m.text ?? "").slice(0, 80)}${(m.text ?? "").length > 80 ? "…" : ""}”` : "Your drawing"}</span>
-                <span className="muted">{shortDate(m.createdAt)}</span>
-                <Tag tone={STATUS[m.status].tone}>{STATUS[m.status].label}</Tag>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
     </section>
   );
 }

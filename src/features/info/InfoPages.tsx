@@ -107,7 +107,7 @@ export function PrivacyPage() {
         Leaving a photo memory, note or drawing is optional and never affects your stamp. Photos and words you submit are stored on the Heirloom server with an anonymous guest ID that this browser keeps; there is no account and no email. A display name is optional and is shown with your memory if you give one.
       </p>
       <p>
-        Every new memory starts as <strong>waiting for review</strong> and is not visible to anyone else. It becomes public, on that place's wall only, after a moderator approves it. Memories that are rejected or hidden are never shown publicly, and moderation reasons are never published. In this browser you can see the status of your own submissions under “Your submissions” on each place.
+        Every new memory starts as <strong>waiting for review</strong> and is not visible to anyone else. It becomes public, on that place's wall only, after a moderator approves it. Memories that are rejected or hidden are never shown publicly, and moderation reasons are never published. You can review your own submissions in your profile in this browser.
       </p>
       <p>
         Anyone can report a public memory; a memory that is reported several times is hidden until a moderator looks at it. To limit abuse, the server limits how many memories can be shared in a short time. Some memories are written by the Heirloom team as samples for the demo and are labelled “Sample”.

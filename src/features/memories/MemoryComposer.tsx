@@ -1,5 +1,5 @@
 import { useId, useRef, useState } from "react";
-import { CheckCircle2, PenLine, Brush, Send, ImagePlus, X } from "lucide-react";
+import { PenLine, Brush, Send, ImagePlus, X } from "lucide-react";
 import type { Site } from "../../content/types";
 import { Button } from "../../components/Button";
 import { MemoryApiError, submitMemory } from "../../services/memories";
@@ -111,11 +111,7 @@ export function MemoryComposer({ site, onSubmitted, onBack, onBusyChange, onView
   if (status === "sent") {
     return (
       <div className="composer-sent" role="status">
-        <CheckCircle2 size={40} aria-hidden="true" />
         <h3>Your memory is now part of our shared story.</h3>
-        <p>
-          It is saved and waiting for review. After a moderator approves it, it can appear on the {site.name} memory wall.
-        </p>
         <div className="composer-sent__actions">
           <Button onClick={onViewSaved ?? onBack}>View saved memory</Button>
           <Button variant="secondary" onClick={onBack}>Return to {site.name}</Button>
